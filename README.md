@@ -80,6 +80,8 @@ anchor is the address.
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
 | `Cr3dXVerifier` | Creditcoin3 Testnet | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
+| `Cr3dXDeals` | Creditcoin3 Testnet | `0x52B54F4aC836C5b32fFec72a2f03f1C22174B756` |
+| `Cr3dXCredit` | Creditcoin3 Testnet | `0x240B41fFE4F5A1D6047c9024873D636D70a99780` |
 | `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
 
 An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
@@ -94,6 +96,14 @@ Its facts are still on chain, and the redeployed verifier reproduced every
 evidence identifier byte for byte, because an identifier is a hash of the source
 fact rather than of the contract that recorded it.
 
+`Cr3dXCredit` was deployed by `Cr3dXDeals`, in the registry's own constructor.
+The two need each other's addresses, and the usual answer to that circle is an
+initialiser that some privileged address may call once. The moment such an
+address exists, *no role, including the deployer, can change a status, a proof,
+an outcome or a reserve* stops being true, and that sentence is the product. So
+the credit layer's owner is fixed at construction and there is no setter to
+point it anywhere else.
+
 `DoubleFundingFixture` is test infrastructure and not part of the system. It
 exists to produce one transaction that an externally owned account cannot: two
 gateway events plus a counterfeit, all in one call.
@@ -105,6 +115,9 @@ The same addresses are recorded in `deployments/`, which the scripts read.
 ```
 contracts/       Solidity sources, the production perimeter
   Cr3dXGateway   the Sepolia end: moves tokens, emits a provable fact
+  Cr3dXVerifier  the Creditcoin end: the only door an external fact comes through
+  Cr3dXDeals     the registry: what a proven fact means for a deal
+  Cr3dXCredit    score, limit, reserve, exposure, canonical outcomes
   interfaces/    the Attestcoin precompiles, transcribed from the runtime
   libraries/     decoding of proven source transactions
 test/            Foundry tests
@@ -116,6 +129,7 @@ worker/          proof worker: watches the gate, waits for attestation, submits
 deployments/     live addresses, committed
 docs/            specification, protocol reconnaissance, integration notes, status
 data/probe/      raw measurement output, committed as evidence
+data/live/       live end-to-end runs with their measured gas, committed
 ```
 
 Contracts and their tests are built with Foundry, because the specification calls
@@ -177,7 +191,9 @@ npm run preflight         # read-only RPC, config, deployment and balance gate
 npm run deploy:sepolia    # checks test USDC, then deploys Cr3dXGateway
 npm run capture:gate      # A funds, B repays, then fixtures are proven
 npm run deploy:creditcoin # deploys Cr3dXVerifier to Creditcoin
-npm run verify:live       # the whole path, end to end, nothing simulated
+npm run verify:live       # proofs land as facts, end to end, nothing simulated
+npm run deploy:deals      # deploys Cr3dXDeals, and Cr3dXCredit with it
+npm run deal:live         # the whole credit path on live testnets
 ```
 
 **`preflight` sends nothing** and is safe to run at any point. It projects the
@@ -210,8 +226,13 @@ The complete ordered run starts with these faucet targets:
 
 | Wallet | Sepolia ETH | Circle test USDC | Creditcoin test CTC |
 |---|---:|---:|---:|
-| A, deployer and investor | 0.02 | 1.0 | 0.1 |
-| B, borrower and payer | 0.005 | 0.1 | none |
+| A, deployer and investor | 0.02 | 1.0 | 0.01 |
+| B, borrower and payer | 0.005 | 0.1 | 0.005 |
+
+B's CTC is only needed for `createDeal`, since the borrower opens the deal.
+`deal:live` tops B up from A when it is short: A holds the CTC, and a transfer
+between two wallets you already control is cheaper than a faucet round trip in
+the middle of a demo. `preflight` says which of the two will happen.
 
 The USDC minimums use the actual order of the demo: A funds B with 1.0 USDC,
 B adds its initial 0.1 and repays 1.1 USDC to A, then A uses the returned funds
@@ -232,6 +253,30 @@ event in the same transaction ignored. It fetches proofs fresh every run and
 never replays the ones stored in the fixtures, because a continuity proof stops
 verifying once the attestation it anchors to has been pruned. See
 [docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
+
+`npm run deal:live` is the same claim carried through to a credit outcome. B
+opens a deal, A funds it on Sepolia, B also sends a funding for the same deal
+which nothing entitles B to do, both are proven and applied in one Creditcoin
+transaction each, B repays, and the deal closes as `PAID_ON_TIME` with the score
+and the limit moving. The impostor funding lands in `REJECTED_PERMANENT` with
+`WRONG_INVESTOR`; it is a self-transfer, so it demonstrates the refusal without
+moving any money. Measured gas is written to `data/live/` with the run.
+
+From the run of 2026-08-19, measured rather than estimated:
+
+| Operation | Chain | Gas | Continuity roots |
+|---|---|---:|---:|
+| `createDeal` | Creditcoin | 259,548 | |
+| `fund` | Sepolia | 59,292 | |
+| `submitAndApply`, funding | Creditcoin | 336,658 | 10 |
+| `submitAndApply`, refused funding | Creditcoin | 257,292 | 7 |
+| `repay` | Sepolia | 59,260 | |
+| `submitAndApply`, repayment | Creditcoin | 338,044 | 1 |
+
+The repayment carried one continuity root and still cost more than the funding
+that carried ten, because a root is worth roughly 380 gas while applying a
+repayment writes more state than applying a funding. The refused funding is the
+floor: verification plus one cold write recording the decision.
 
 **Both gateway functions spend an allowance.** `fund` and `repay` move tokens with
 `transferFrom`, so the token must be approved for the gateway address first. The
@@ -280,11 +325,13 @@ NODE_USE_ENV_PROXY=1 npm run probe
 
 ## Status
 
-The cross-chain path works end to end on live testnets. A real Sepolia
-transaction carrying two genuine gateway events and one counterfeit was proven
-through Attestcoin and recorded on Creditcoin as exactly two immutable facts,
-with the counterfeit ignored because its emitter was not the gateway. Three
-transactions, four facts, no simulation anywhere in the path.
+The whole credit path works end to end on live testnets, with nothing simulated
+anywhere in it: a deal opened on Creditcoin, funded by a real Sepolia transfer,
+proven through Attestcoin, financed, repaid, and closed as `PAID_ON_TIME` with
+the borrower's score and limit moving as a consequence. A funding sent by an
+address that is not the designated investor was refused permanently in the same
+run, and a counterfeit gateway event in an earlier one was ignored because its
+emitter was not the gateway.
 
-The deals registry and the credit layer are next. Running detail, transaction
+The proof worker and the demo interface are next. Running detail, transaction
 hashes and measured gas are in [docs/STATUS.md](docs/STATUS.md).

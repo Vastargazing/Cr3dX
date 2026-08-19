@@ -377,6 +377,43 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         );
     }
 
+    /// @notice The scenario of section 5, with the numbers the specification
+    ///         writes down, in both orders.
+    /// @dev The one above states the same property against the amounts this test
+    ///      suite uses everywhere else. This one uses the literal figures from
+    ///      the document so that the regression it names is recognisable at a
+    ///      glance rather than by argument.
+    function test_inv20RegressionScenarioWithTheSpecificationsOwnNumbers() public {
+        uint256 faceValue = 1100;
+        uint64 dueBlock = 100;
+
+        for (uint256 run = 0; run < 2; run++) {
+            _deployCr3dX();
+            bytes32 dealId = _createDeal(borrower, investor, 1000, faceValue, dueBlock);
+            _fundAndApply(dealId, investor, borrower, 1000, 50);
+
+            bytes32 a = _recordRepayment(dealId, borrower, investor, faceValue, 110);
+            bytes32 b = _recordRepayment(dealId, borrower, investor, faceValue, 90);
+            if (run == 0) {
+                deals.applyEvidence(a);
+                deals.applyEvidence(b);
+            } else {
+                deals.applyEvidence(b);
+                deals.applyEvidence(a);
+            }
+
+            Cr3dXDeals.Deal memory deal = deals.getDeal(dealId);
+            assertEq(deal.repaidAmount, 2200, "repaidAmount");
+            assertEq(deal.onTimeRepaid, 1100, "onTimeRepaid");
+            assertEq(deals.outstandingOf(dealId), 0, "outstanding");
+            assertEq(uint8(deal.status), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "status");
+            assertEq(uint8(credit.outcomeOf(dealId)), uint8(Result.PAID_ON_TIME), "outcome");
+            assertEq(credit.scoreOf(borrower), 525, "score");
+            assertEq(credit.exposureOf(borrower), 0, "exposure");
+            assertEq(credit.countersOf(borrower).paidOnTime, 1, "counters");
+        }
+    }
+
     /// @notice Two partial repayments delivered against the order of their block
     ///         heights land on the same state.
     /// @dev Mandatory case from section 9.
@@ -708,6 +745,18 @@ contract Cr3dXDealsTest is Cr3dXHarness {
             credit.recordOutcome(dealId, Result.PAID_ON_TIME);
             vm.stopPrank();
         }
+    }
+
+    /// @notice There are exactly three permanent reasons, and no fourth.
+    /// @dev INV-19. The specification says a fourth may not be added quietly:
+    ///      first the gap in the document is recorded, then the reason. This
+    ///      test is what makes "quietly" impossible.
+    function test_thereAreExactlyThreePermanentReasons() public pure {
+        assertEq(uint8(type(Cr3dXDeals.RejectionReason).max), 3, "a reason was added or removed");
+        assertEq(uint8(Cr3dXDeals.RejectionReason.NONE), 0);
+        assertEq(uint8(Cr3dXDeals.RejectionReason.WRONG_INVESTOR), 1);
+        assertEq(uint8(Cr3dXDeals.RejectionReason.ALREADY_FUNDED), 2);
+        assertEq(uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT), 3);
     }
 
     /// @notice The credit layer belongs to the registry that deployed it.
