@@ -28,3 +28,6 @@ dist/
 
 # probe run log, regenerated on every run; the JSON next to it is the evidence
 data/probe/last-run.log
+
+# local assistant context, not part of the submitted project
+CLAUDE.md
