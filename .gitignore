@@ -1,0 +1,29 @@
+# secrets
+.env
+.env.local
+*.key
+*.pem
+
+# node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# typescript
+dist/
+*.tsbuildinfo
+
+# foundry, anchored to the repository root so they do not swallow scripts/lib
+/out/
+/cache/
+/broadcast/
+/lib/
+
+# editors / os
+.DS_Store
+.idea/
+.vscode/
+
+# probe run log, regenerated on every run; the JSON next to it is the evidence
+data/probe/last-run.log
