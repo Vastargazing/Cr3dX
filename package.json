@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "capture:fixtures": "tsx scripts/capture-fixtures.ts",
     "build": "forge build",
-    "test": "forge test"
+    "test": "forge test",
+    "deploy:gateway": "tsx scripts/deploy-gateway.ts",
+    "capture:gate": "tsx scripts/capture-gate-fixtures.ts"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",

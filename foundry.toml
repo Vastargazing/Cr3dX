@@ -3,6 +3,10 @@ src = "contracts"
 test = "test"
 out = "out"
 libs = ["lib"]
+remappings = [
+    "forge-std/=lib/forge-std/src/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+]
 
 solc = "0.8.28"
 # Creditcoin3 runs `fp_evm::Config::cancun()` (runtime/src/lib.rs:461), so Cancun

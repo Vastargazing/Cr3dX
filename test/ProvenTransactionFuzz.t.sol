@@ -31,7 +31,7 @@ contract ProvenTransactionFuzzTest is Test {
         address emitter,
         bytes32 topic,
         bytes calldata logData
-    ) public {
+    ) public pure {
         uint256 leading = bound(leadingChunks, 0, 6);
         // Keep the blob small enough that the test stays about semantics rather
         // than about how much memory the fuzzer can talk us into allocating.
