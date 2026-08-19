@@ -16,5 +16,12 @@
       "supersededAt": "2026-08-19T14:52:09.511Z",
       "reason": "the first deployment landed on the same address as the Sepolia gateway, because the deployer used nonce 0 on both chains; identical addresses make a misconfigured deployment visually indistinguishable from a correct one"
     }
-  ]
+  ],
+  "previousDeals": [],
+  "deals": "0x52B54F4aC836C5b32fFec72a2f03f1C22174B756",
+  "credit": "0x240B41fFE4F5A1D6047c9024873D636D70a99780",
+  "dealsDeploymentTx": "0xec79896bea7f99d35cb39bb889f70e5754ec0a4ba53407abfb1eb029213a8302",
+  "dealsDeploymentBlock": 5337092,
+  "baseLimit": "5000000000",
+  "attestationGracePeriod": 600
 }

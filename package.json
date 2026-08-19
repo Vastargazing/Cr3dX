@@ -20,7 +20,9 @@
     "capture:gate": "node --import tsx scripts/capture-gate-fixtures.ts",
     "deploy:creditcoin": "node --import tsx scripts/deploy-verifier.ts",
     "deploy:verifier": "npm run deploy:creditcoin",
+    "deploy:deals": "node --import tsx scripts/deploy-deals.ts",
     "verify:live": "node --import tsx scripts/verify-live.ts",
+    "deal:live": "node --import tsx scripts/deal-live.ts",
     "test:scripts": "node --import tsx --test scripts/lib/*.test.ts"
   },
   "dependencies": {
