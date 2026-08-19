@@ -46,7 +46,7 @@ record.
 **No Sybil resistance.** *Cr3dX score is address-level verified repayment
 reputation, not Sybil-resistant creditworthiness.*
 
-## Networks
+## Networks and addresses
 
 | Role | Network | Chain id |
 |---|---|---|
@@ -57,17 +57,42 @@ Sepolia's identifier inside Creditcoin is a `chainKey` assigned by the on-chain
 registry, which is not the EVM chain id. It is resolved at runtime; see
 [docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
 
+### The asset
+
+```
+Sepolia USDC   0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238   6 decimals
+```
+
+**Read that address, not the symbol.** More than one token on Sepolia calls itself
+USDC with six decimals. The gateway accepts exactly this one, fixed at deployment
+and unchangeable afterwards. A transfer of a different USDC will succeed at the
+token and produce no gateway event at all, which looks like a broken bridge and is
+not one. Test tokens for this address come from https://faucet.circle.com.
+
+The deployment script refuses to run if the configured address does not report the
+expected symbol and decimals. That check protects the operator from a typo; it is
+not a security boundary, because a symbol is not an identifier. The security
+anchor is the address.
+
+### Deployed contracts
+
+Live addresses are recorded in `deployments/sepolia.json` and in
+[docs/STATUS.md](docs/STATUS.md) as they are deployed.
+
 ## Repository layout
 
 ```
-contracts/       Solidity sources
+contracts/       Solidity sources, the production perimeter
+  Cr3dXGateway   the Sepolia end: moves tokens, emits a provable fact
   interfaces/    the Attestcoin precompiles, transcribed from the runtime
   libraries/     decoding of proven source transactions
 test/            Foundry tests
-  fixtures/      transaction blobs captured from live Sepolia
+  helpers/       test infrastructure, never part of the system
+  fixtures/      transactions captured from live Sepolia, with their proofs
 scripts/         TypeScript tooling: network probe, fixture capture, deployment
   lib/           shared clients for the precompiles and the proof builder
 worker/          proof worker: watches the gate, waits for attestation, submits
+deployments/     live addresses, committed
 docs/            specification, protocol reconnaissance, integration notes, status
 data/probe/      raw measurement output, committed as evidence
 ```
@@ -114,6 +139,34 @@ The capture reads expected values from `eth_getTransactionReceipt` and cross-che
 them against the attested blob before writing anything, so a fixture can only be
 written if the protocol's encoding and Ethereum's own receipt agree.
 
+## Reproducing the Sepolia side
+
+Everything below runs against live testnets. Nothing here is mocked.
+
+**What you need first.** A Sepolia account with test ETH for gas, and test USDC
+from https://faucet.circle.com for the address printed above. Put that account's
+private key in `.env` as `DEPLOYER_PRIVATE_KEY`. The key is read from `.env` and
+nowhere else, is never printed, and `.env` is git-ignored.
+
+```sh
+npm run build
+npm run deploy:gateway    # checks the token, then deploys Cr3dXGateway
+npm run capture:gate      # approve, fund, repay, and prove all of it
+```
+
+**Both gateway functions spend an allowance.** `fund` and `repay` move tokens with
+`transferFrom`, so the token must be approved for the gateway address first. The
+scripts do this for you; if you drive the contracts by hand and skip it, the call
+reverts inside the token with an allowance error. That failure has nothing to do
+with Attestcoin, and it is by far the most likely thing to go wrong when
+reproducing the demo, so it is worth recognising on sight.
+
+`npm run capture:gate` sends its transactions immediately and then waits in one
+block for attestation to catch up, which takes roughly ten minutes: attestation
+trails the Sepolia head by about seven minutes by design, and the proof builder's
+own cache trails that. The wait is the protocol's reorg protection, not a stall.
+Progress is printed each poll.
+
 ## Measuring the live network
 
 Several protocol parameters are runtime state and cannot be read off the source:
@@ -148,6 +201,6 @@ NODE_USE_ENV_PROXY=1 npm run probe
 
 ## Status
 
-Network measured, contract foundation in place: the precompile interfaces and the
-decoder for proven source transactions, tested against live blobs. The Sepolia gate
-is next. Running detail is in [docs/STATUS.md](docs/STATUS.md).
+Network measured, decoder for proven source transactions in place, Sepolia gateway
+written and tested. The Creditcoin verifier is next. Running detail is in
+[docs/STATUS.md](docs/STATUS.md).

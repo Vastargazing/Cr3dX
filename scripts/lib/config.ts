@@ -25,6 +25,22 @@ export const config = {
   /** EVM chain id of the deployment target, asserted against the live node. */
   creditcoinChainId: num('CREDITCOIN_CHAIN_ID', 102031),
 
+  /**
+   * The one asset the gateway moves. Circle's Sepolia test USDC, chosen because
+   * it has a public faucet, so a judge can reproduce the demo without asking
+   * anyone for tokens.
+   *
+   * More than one token on Sepolia calls itself USDC with six decimals, so the
+   * symbol is not an identifier. The address is. `expectedTokenSymbol` and
+   * `expectedTokenDecimals` exist so the deployment script can catch a
+   * mistyped address; they are a configuration guard for the operator, not a
+   * security boundary. The security anchor is the address itself, baked into the
+   * gateway at deployment and implicit in every proof of a gateway event.
+   */
+  sepoliaUsdc: (process.env.SEPOLIA_USDC ?? '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238') as string,
+  expectedTokenSymbol: process.env.EXPECTED_TOKEN_SYMBOL ?? 'USDC',
+  expectedTokenDecimals: num('EXPECTED_TOKEN_DECIMALS', 6),
+
   probe: {
     lagSamples: num('PROBE_LAG_SAMPLES', 20),
     lagIntervalMs: num('PROBE_LAG_INTERVAL_MS', 45_000),

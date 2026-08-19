@@ -49,7 +49,7 @@ contract ProvenTransactionTest is Test {
 
     /// @notice Every captured blob decodes, whatever its transaction type.
     function test_decodesEveryTransactionType() public view {
-        uint256 seenTypes;
+        bool[4] memory seenTypes;
         for (uint256 i = 0; i < names.length; i++) {
             Fixture memory f = _load(names[i]);
             (uint8 status, ProvenLog[] memory logs) = f.encodedTx.decodeReceipt();
@@ -58,10 +58,12 @@ contract ProvenTransactionTest is Test {
             assertEq(logs.length, f.logCount, string.concat(f.name, ": log count"));
             assertEq(f.encodedTx.transactionType(), f.txType, string.concat(f.name, ": tx type"));
 
-            seenTypes |= (1 << f.txType);
+            if (f.txType < 4) seenTypes[f.txType] = true;
         }
         // Types 0, 1, 2 and 3 all present: the claim is tested, not assumed.
-        assertEq(seenTypes & 0x0F, 0x0F, "fixtures must cover transaction types 0 through 3");
+        for (uint256 t = 0; t < 4; t++) {
+            assertTrue(seenTypes[t], string.concat("fixtures must cover transaction type ", vm.toString(t)));
+        }
     }
 
     /// @notice Every log field survives the round trip, for every fixture.
