@@ -1,0 +1,12 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  "tokenSymbol": "USDC",
+  "tokenDecimals": 6,
+  "gateway": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
+  "gatewayDeploymentTx": "0xdda8e394e2db076dc611b553a54226f0f5ba8f60f7d6a53ca67e281a18a45efb",
+  "gatewayDeploymentBlock": 11521629,
+  "deployedBy": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6",
+  "doubleFundingFixture": "0x014B96AB1E09b4F041451787F62A244fA9c180E6"
+}

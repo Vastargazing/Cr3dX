@@ -460,3 +460,101 @@ proving late.
 **Nothing is lost by waiting.** The retention window is a cost question, not a
 correctness one. A funding proven a week late is the same funding, and the deals
 contract settles it against the source block height either way.
+
+---
+
+## The live path, measured
+
+Recorded on the first end-to-end acceptance run, 2026-08-19. Sepolia gateway
+`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`, Creditcoin verifier at the same
+address on chain 102031. Three real Sepolia transactions, proven and recorded.
+
+### Continuity proof size has an exact formula, and it is not about age
+
+The earlier section established that proofs expire and grow. The live run pins
+down the mechanism precisely. Proofs fetched within minutes of the transactions:
+
+| Transaction | Height | Continuity roots |
+|---|---:|---:|
+| `fund` | 11521633 | 8 |
+| `repay` | 11521636 | 5 |
+| `double-funding` | 11521639 | 2 |
+
+The attested height at that moment was 11521640. In every case:
+
+```
+roots = nearestSurvivingAnchor - queryHeight + 1
+```
+
+11521640 - 11521633 + 1 = 8. 11521640 - 11521636 + 1 = 5. 11521640 - 11521639 + 1 = 2.
+
+The same formula explains the aged fixtures from the earlier stage, and shows
+what the anchor becomes once the fine-grained attestations are gone:
+
+| Fixture | Height | Roots when fresh | Roots a day later | Implied anchor |
+|---|---:|---:|---:|---:|
+| `reverted` | 11520066 | 5 | 35 | 11520100 |
+| `many-logs` | 11520060 | n/a | 41 | 11520100 |
+
+Both aged proofs anchor to **11520100**, a multiple of 100. That is the
+checkpoint grid: ten blocks per attestation, ten attestations per checkpoint. So
+proof size is not a function of how old the fact is, it is the distance to the
+nearest anchor the chain still holds, and that anchor degrades from the
+attestation grid to the checkpoint grid once retention expires.
+
+The practical bound follows directly. A proof built promptly costs at most one
+attestation interval of roots, so eleven at the very worst. A proof built after
+retention expires costs at most one checkpoint interval, so a hundred and one.
+Neither is close to the 500-root ceiling, and the gas difference between them is
+roughly 1,600 bytes of calldata.
+
+### Gas, measured rather than estimated
+
+Replaces the synthetic figures from the unit tests, which excluded calldata and
+the precompile's own metering.
+
+| Submission | Gateway events | Blob | Calldata | Calldata gas | Total gas |
+|---|---:|---:|---:|---:|---:|
+| `repay` | 1 | 2,080 B | 3,044 B | 44,204 | **177,385** |
+| `fund` | 1 | 2,080 B | 3,140 B | 45,356 | 158,749 |
+| `double-funding` | 2 | 3,840 B | 4,772 B | 57,680 | **317,037** |
+
+**Take 177,385 as the cost of a one-fact submission, not 158,749.** The cheaper
+row is an artefact that occurs exactly once in a gateway's lifetime: its event
+carried nonce 0, and a zero stores into a fresh slot for 2,200 gas where a
+non-zero costs 22,100. Accounting for that and for the three extra continuity
+roots the `fund` proof happened to carry:
+
+```
+(22,100 - 2,200) - 3 x 48 = 19,756 gas expected
+133,181 - 113,393         = 19,788 gas observed
+```
+
+A residue of 32 gas. The difference is entirely storage semantics, not anything
+about funding versus repayment.
+
+At the measured Creditcoin gas price of 0.5 gwei, a one-fact submission costs
+0.000089 CTC, and deploying the verifier cost 0.000635 CTC. The whole Creditcoin
+side of a deal is a fraction of a cent.
+
+### Attestation lag on the day
+
+| | |
+|---|---|
+| Lag when the last transaction landed | 39 blocks |
+| Time for attestation to cover it | 490 s |
+| Lag sampled after the run | 42 blocks, 516 s |
+| Attestation steps observed | 11521600, 610, 620, 630, 640 |
+
+Every step was exactly ten blocks, and the lag sat at 39 to 42 blocks against
+the 32 to 41 measured on the first day. The `attestationGracePeriod` of 600
+blocks remains sized against `MaxCatchup`, which is the failure mode this run
+did not exercise and would not have shown.
+
+### The proof builder caught up completely
+
+During the run the builder's cache trailed the on-chain attestation by up to ten
+blocks, as before. Sampled after the run it was level with it, at 11521650 on
+both. The trailing cache is a transient, not a fixed offset, so the worker still
+has to poll the builder rather than assume a constant delay.
+

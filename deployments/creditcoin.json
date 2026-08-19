@@ -1,0 +1,11 @@
+{
+  "network": "creditcoin3-testnet",
+  "chainId": 102031,
+  "chainKey": 1,
+  "sourceChainId": 11155111,
+  "sourceGateway": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
+  "verifier": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
+  "verifierDeploymentTx": "0x4a3a4469fec70131b37bb0e53c27b0818647c0c10436752bbf15568942876643",
+  "verifierDeploymentBlock": 5336695,
+  "deployedBy": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6"
+}

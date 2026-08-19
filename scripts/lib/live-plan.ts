@@ -287,4 +287,18 @@ export function renderProjection(projection: Projection, decimals: number): stri
 /** Conservative faucet targets covering the complete run at ordinary testnet fees. */
 export const MIN_SEPOLIA_ETH_A = 20_000_000_000_000_000n; // 0.02 ETH
 export const MIN_SEPOLIA_ETH_B = 5_000_000_000_000_000n; // 0.005 ETH
-export const MIN_CREDITCOIN_CTC_A = 100_000_000_000_000_000n; // 0.1 CTC
+
+/**
+ * Creditcoin side of the run, measured rather than guessed.
+ *
+ * `eth_estimateGas` puts the verifier deployment at 1,269,505 gas, and the live
+ * gas price is 0.5 gwei, so deploying and submitting every fixture costs under
+ * 0.001 CTC. The previous threshold here was 0.1 CTC, an unmeasured guess a
+ * hundred times larger than the real cost, which would have blocked a run whose
+ * faucet handed out less than that while the balance was in fact ample.
+ *
+ * 0.01 CTC keeps roughly ten times the measured cost in reserve, which covers a
+ * base fee that moves, and is small enough that every faucet in circulation
+ * dispenses at least that much in one request.
+ */
+export const MIN_CREDITCOIN_CTC_A = 10_000_000_000_000_000n; // 0.01 CTC
