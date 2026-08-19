@@ -1,65 +1,159 @@
-# Specification ambiguities
+# Неоднозначности спецификации v0.4.2
 
-Owned by the independent invariant-test agent. **The main developer does not fill
-this in.**
+Этот журнал получен в слепой фазе A только из
+`docs/cr3dx-spec-v0.4.0-final.md` (редакция внутри — v0.4.2) и публичного интерфейса
+`Cr3dXVerifier`. Реализация Deals/Credit и тесты разработчика не использовались.
 
-## What this file is for
+Ниже нет попытки угадать намерение. Пока неоднозначность не разрешена изменением спецификации,
+адаптер фазы B обязан показать оба наблюдения и классифицировать расхождение до изменения оракула.
 
-The agent writing invariant tests works from `docs/cr3dx-spec-v0.4.0-final.md`
-without reading the implementation. That separation only produces useful tests if
-the agent never has to guess. Where the specification admits two readings, the
-guess would be worthless twice over: a coin flip against the author's intent, and
-a silent invitation to shape the model around whatever the code happens to do.
+## A-01 — частичные фандинги не обладают заявленной независимостью от порядка
 
-So: when a passage supports more than one reading, do not pick one. Record both
-here and keep going. A recorded ambiguity is a finding about the specification. A
-resolved-by-guessing ambiguity is a test that proves nothing.
+Неоднозначность:
+INV-3 требует одинакового результата для одного множества доказательств и отдельно требует
+перестановок нескольких частичных фандингов. Одновременно раздел 4.3 требует учитывать фандинг
+целиком, пока сумма ниже порога, и навсегда отклонять каждый следующий фандинг после достижения
+порога. Для трёх платежей эти правила дают разные суммы и разные состояния доказательств.
 
-## What belongs here
+Прочтение A:
+Буквально исполнять правило перехода: первый платёж, пересёкший порог, применяется целиком, все
+доставленные после него получают `ALREADY_FUNDED`. Тогда INV-11 и INV-18 выполняются, но INV-3
+не выполняется для `fundedAmount`, набора `APPLIED` и величины переплаты.
 
-Only genuine ambiguity: the document supports two readings that lead to different
-observable behaviour.
+Прочтение B:
+Считать итог по всему множеству корректных фандингов независимо от доставки. Тогда нужно уточнить,
+какие доказательства после пересечения порога всё же учитываются и когда `ALREADY_FUNDED` применим;
+буквальное правило `ALREADY_FUNDED` из v0.4.2 меняется.
 
-Not here:
-- something the specification does not mention at all. That is an omission, and
-  it goes in the same format with Interpretation B left as "undefined";
-- something the specification states clearly that you disagree with. Follow it
-  and say so separately;
-- questions about the implementation. This file is about the document.
+Затронутые инварианты:
+INV-3, INV-11, INV-18.
 
-## Format
+Минимальный сценарий, различающий прочтения:
+`requiredFunding = 100`, три корректных доказательства на суммы 60, 50 и 40. Порядок
+`60 → 50 → 40` даёт по буквальному правилу `fundedAmount = 110`; `60 → 40 → 50` даёт 100;
+`50 → 40 → 60` даёт 150. Состояние третьего доказательства также меняется между `APPLIED` и
+`REJECTED_PERMANENT`. Сценарий исполняется тестом
+`test_SPEC_AMBIGUITY_partialFundingPermutationsAreNotConfluent`.
 
-One block per ambiguity, appended in the order found.
+## A-02 — неверный получатель погашения до фиксации инвестора
 
-```
-### <short title>
+Неоднозначность:
+Общий критерий 3.3 разрешает `VERIFIED_PENDING` тогда и только тогда, когда существует допустимое
+будущее состояние, в котором доказательство применимо. Но частное правило 4.3 оставляет любое
+погашение до фиксации `deal.investor` в `VERIFIED_PENDING`. При этом будущий инвестор уже однозначно
+задан неизменяемым `designatedInvestor`, потому что принять фандинг от другого адреса нельзя.
 
-Ambiguity:
-    <the passage, quoted, and what is unclear about it>
+Прочтение A:
+Частное правило приоритетно: до фандинга любое погашение остаётся `VERIFIED_PENDING`, а неверный
+получатель выявляется и получает `WRONG_RECIPIENT` только после фиксации инвестора.
 
-Interpretation A:
-    <first reading, and what the system would do under it>
+Прочтение B:
+Общий критерий «тогда и только тогда» приоритетен: если получатель уже не равен
+`designatedInvestor`, допустимого будущего нет и доказательство немедленно получает
+`REJECTED_PERMANENT / WRONG_RECIPIENT`.
 
-Interpretation B:
-    <second reading, and what the system would do under it>
+Затронутые инварианты:
+INV-3, INV-19.
 
-Invariants affected:
-    <INV-N, ...>
+Минимальный сценарий, различающий прочтения:
+Существует сделка `CREATED` с `designatedInvestor = I`; приходит погашение с `recipient = J`,
+где `J != I`. Прочтение A даёт `VERIFIED_PENDING`, прочтение B сразу даёт
+`REJECTED_PERMANENT / WRONG_RECIPIENT`. Сценарий исполняется тестом
+`test_SPEC_AMBIGUITY_wrongRecipientBeforeFundingConflictsWithGeneralPendingRule`.
 
-Minimal scenario exposing the difference:
-    <the shortest sequence of actions whose outcome differs between A and B>
-```
+## A-03 — момент доведения ожидающего погашения после фандинга
 
-The minimal scenario is the load-bearing part. An ambiguity that no scenario can
-distinguish is a wording preference, not an ambiguity.
+Неоднозначность:
+Спецификация говорит, что подача сразу пытается применить доказательство, а `applyEvidence`
+«доводит зависшие». Не сказано, обязан ли переход сделки в `FINANCED` автоматически повторно
+применить уже существующие ожидающие погашения. Без автоматического доведения два порядка доставки
+одного набора фактов имеют разное состояние непосредственно после второй подачи.
 
-## Resolution
+Прочтение A:
+Фандинг автоматически доводит связанные ожидающие погашения до неподвижной точки в той же
+транзакции. Экономическое состояние сходится сразу после доставки одинакового набора фактов.
 
-Resolutions are made by the specification author, not here and not by the test
-agent. When one lands, the specification changes with a note in its changelog,
-and the block below is annotated with the version that resolved it.
+Прочтение B:
+Ожидающее погашение меняется только отдельным permissionless-вызовом `applyEvidence`. Равенство
+порядков проверяется после явного доведения всех применимых `VERIFIED_PENDING`.
 
----
+Затронутые инварианты:
+INV-3, INV-19, INV-20.
 
-*No entries yet. The specification was frozen at v0.4.2 before the blind review
-began.*
+Минимальный сценарий, различающий прочтения:
+Создать сделку; сначала подать полное корректное погашение, затем полный корректный фандинг.
+Сразу после фандинга прочтение A даёт `PAID_*`, прочтение B оставляет сделку `FINANCED` и погашение
+`VERIFIED_PENDING` до отдельного `applyEvidence`. Эталонная модель сравнивает порядки после явного
+`drainPending`, не утверждая автоматизм.
+
+## A-04 — однотранзакционная подача пруфа отсутствует в allowlist Deals
+
+Неоднозначность:
+Раздел 4.2 требует путь `Cr3dXDeals → Verifier.submitEvidence → ids → применение` в одной
+транзакции. Раздел 4.3 одновременно фиксирует исчерпывающий список публичных изменяющих состояние
+функций Deals: `createDeal`, `applyEvidence(bytes32)` и `markDefaulted`. Ни одна из них не принимает
+параметры пруфа, необходимые для вызова Verifier.
+
+Прочтение A:
+Список 4.3 действительно исчерпывающий; тогда доступен только двухтранзакционный путь: сначала
+публичная подача в Verifier, затем `applyEvidence` в Deals.
+
+Прочтение B:
+Однотранзакционный путь обязателен; тогда в allowlist Deals отсутствует как минимум одна публичная
+функция-обёртка с параметрами одиночного или пакетного пруфа.
+
+Затронутые инварианты:
+INV-1, INV-7, INV-8, INV-17 и ABI allowlist фазы B.
+
+Минимальный сценарий, различающий прочтения:
+Пользователь располагает ещё не поданным валидным пруфом фандинга. В одной транзакции вызывает
+только одну из трёх разрешённых функций Deals. По прочтению A записать факт и применить его одной
+транзакцией невозможно; по прочтению B существует дополнительный селектор, отсутствующий в 4.3.
+
+## A-05 — интерфейс Credit не содержит переходов резерва и экспозиции
+
+Неоднозначность:
+Раздел 4.4 требует, чтобы Credit показывал `reservedOf` и `exposureOf`, а также описывает изменения
+этих величин при создании, фандинге и погашении. Единственная перечисленная изменяющая состояние
+функция Credit — `recordOutcome(bytes32, Result)`, доступная только Deals; она не получает ни
+заёмщика, ни суммы и вызывается только при появлении или уточнении итога. Способ обновить резерв при
+создании и экспозицию при неполном погашении не определён.
+
+Прочтение A:
+Резерв и экспозиция хранятся в Credit. Тогда спецификации не хватает разрешённых `onlyDeals`
+переходов и их точных аргументов; буквальный ABI allowlist неполон.
+
+Прочтение B:
+Резерв и экспозиция хранятся в Deals, а Credit вычисляет или проксирует view-значения. Тогда нужно
+описать источник, связь контрактов и то, как Credit узнаёт сделки заёмщика; текущего интерфейса для
+этого недостаточно.
+
+Затронутые инварианты:
+INV-7, INV-9, INV-10, INV-13, INV-21 и ABI allowlist фазы B.
+
+Минимальный сценарий, различающий прочтения:
+Заёмщик создаёт сделку `faceValue = 110`. Немедленно после создания `reservedOf(borrower)` обязан
+увеличиться на 110, хотя `recordOutcome` не вызывается. Проверить, какой контракт хранит изменение
+и какой разрешённый переход его совершает; перечисленный интерфейс Credit такого перехода не даёт.
+
+## A-06 — повторный вызов applyEvidence для терминального доказательства
+
+Неоднозначность:
+INV-2 требует учитывать `evidenceId` не более одного раза, но не задаёт наблюдаемое поведение
+повторного `applyEvidence` для уже `APPLIED` или `REJECTED_PERMANENT`: revert, успешный no-op либо
+событие без изменения состояния.
+
+Прочтение A:
+Повторный вызов ревертит с именованной ошибкой; состояние не меняется.
+
+Прочтение B:
+Повторный вызов является идемпотентным успешным no-op; состояние не меняется.
+
+Затронутые инварианты:
+INV-2, INV-7 (наблюдаемая публичная поверхность; экономическое состояние одинаково).
+
+Минимальный сценарий, различающий прочтения:
+Применить корректный полный фандинг, затем дважды вызвать `applyEvidence` с тем же `evidenceId`.
+Оба прочтения сохраняют `fundedAmount`, но различаются успешностью второго вызова и событиями.
+Эталонная модель использует no-op только для удобства stateful-фаззинга и не замораживает это как
+требование к адаптеру фазы B.
