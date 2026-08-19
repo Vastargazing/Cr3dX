@@ -558,3 +558,70 @@ blocks, as before. Sampled after the run it was level with it, at 11521650 on
 both. The trailing cache is a transient, not a fixed offset, so the worker still
 has to poll the builder rather than assume a constant delay.
 
+---
+
+## Attestation retention, measured
+
+The verifier was redeployed about an hour after the first acceptance run and the
+same three transactions were proven again. Nothing about them had changed, but
+their proofs had:
+
+| Fixture | Height | Roots, minutes after the fact | Roots, an hour later | Gas then | Gas an hour later |
+|---|---:|---:|---:|---:|---:|
+| `double-funding` | 11521639 | 2 | 62 | 317,037 | 350,781 |
+| `fund` | 11521633 | 8 | 68 | 158,749 | 192,493 |
+| `repay` | 11521636 | 5 | 65 | 177,385 | 211,129 |
+
+Every fresh proof anchored at 11521640, the attested tip at the time. Every hour
+old proof anchored at **11521700**, a checkpoint boundary. The extra cost is
+almost exactly what the extra roots imply: 60 roots is 1,920 bytes of calldata at
+16 gas a byte plus 48 gas a root inside the precompile, so about 33,600, against
+33,700 observed.
+
+### The window
+
+`get_attestation_bounds` distinguishes the two kinds of anchor, and the answer is
+unambiguous. Around the hour-old heights:
+
+```
+height 11521650: parent 11521600 (isAttestation=false), child 11521700 (isAttestation=false)
+height 11521800: parent 11521790 (isAttestation=true),  child 11521800 (isAttestation=true)
+```
+
+Both bounds around the older height are checkpoints. The attestations that used
+to sit between them on the ten-block grid are gone.
+
+Bisecting for the oldest surviving attestation, with the attested tip at
+11521850, put the boundary between 11521700 and 11521710:
+
+| | |
+|---|---|
+| Retention window | about 140 source blocks behind the attested tip |
+| In time | about 28 minutes of Sepolia |
+| In attestations | about 14 |
+
+One sample, one moment, so treat the number as an order of magnitude rather than
+a constant. The shape is certain; the exact figure is not, and whether pruning is
+by count or by age is a question for the protocol team.
+
+### What follows
+
+**Proving promptly is a cost decision with a deadline.** Inside the window a
+proof carries at most one attestation interval of roots, eleven at worst. Outside
+it, the anchor is the checkpoint grid and the proof carries up to a hundred and
+one. The measured price of missing the window is about 34,000 gas per submission.
+
+**Nothing is lost by missing it.** The fact stays provable indefinitely through
+checkpoints, and the deals contract settles by source block height regardless of
+when the proof arrives. This is a bill, not a deadline.
+
+**The worker gets a concrete target.** Submit within roughly twenty minutes of a
+height becoming attested and proofs stay short. That is comfortable: the builder
+trails the chain by at most a handful of blocks, and building and sending takes
+seconds.
+
+**Evidence identifiers are independent of the verifier instance.** The redeployed
+verifier produced byte-identical identifiers for the same facts, which is what
+`keccak256(abi.encode(chainKey, height, txIndex, kind, eventNonce))` promises and
+now demonstrates. A redeployment replays the same history to the same names.
+

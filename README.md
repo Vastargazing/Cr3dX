@@ -79,13 +79,20 @@ anchor is the address.
 | Contract | Network | Address |
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
-| `Cr3dXVerifier` | Creditcoin3 Testnet | `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` |
+| `Cr3dXVerifier` | Creditcoin3 Testnet | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
 | `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
 
-The gateway and the verifier share an address. That is arithmetic, not a
-copy-paste error: both were deployed by the same account as its first
-transaction on each chain, and a contract address is derived from the deployer
-and its nonce. They are separate contracts on separate chains.
+An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
+and is kept in `deployments/creditcoin.json` with the reason. It landed on the
+same address as the Sepolia gateway, because the same account deployed each as
+its first transaction on its chain and a contract address derives from the
+deployer and its nonce. That is legal and confusing: a verifier misconfigured
+with the gateway's address would have looked identical to a correct one. The
+deployment script now refuses such a collision outright.
+
+Its facts are still on chain, and the redeployed verifier reproduced every
+evidence identifier byte for byte, because an identifier is a hash of the source
+fact rather than of the contract that recorded it.
 
 `DoubleFundingFixture` is test infrastructure and not part of the system. It
 exists to produce one transaction that an externally owned account cannot: two

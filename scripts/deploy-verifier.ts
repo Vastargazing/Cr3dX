@@ -7,7 +7,7 @@
  * constant, and the gateway address from deployments/sepolia.json. Both are
  * baked in permanently, so both are checked before the transaction is sent.
  */
-import { ContractFactory, formatEther } from 'ethers';
+import { ContractFactory, formatEther, getCreateAddress } from 'ethers';
 import { config, warnIfProxyIgnored } from './lib/config.js';
 import { evmProvider, errMessage } from './lib/rpc.js';
 import { ChainInfoReader } from './lib/precompiles.js';
@@ -46,10 +46,27 @@ async function main(): Promise<void> {
   if (balance === 0n) throw new Error('The deployer has no Creditcoin testnet CTC. Fund it before deploying.');
 
   const existing = readDeployment('creditcoin');
-  if (existing?.verifier) {
+  const reason = process.env.REDEPLOY_REASON?.trim();
+  if (existing?.verifier && !reason) {
     log(`deployments/creditcoin.json already records a verifier at ${existing.verifier}.`);
-    log('Delete that entry to deploy a fresh one. A new verifier starts with no recorded facts.');
+    log('A new verifier starts with no recorded facts, so redeploying is never a no-op.');
+    log('To redeploy anyway, set REDEPLOY_REASON to why. The old record is kept, not overwritten.');
     return;
+  }
+
+  // A contract address is derived from the deployer and its nonce, so the same
+  // account deploying its first contract on two chains produces the same address
+  // on both. That is legal and confusing: a verifier misconfigured with the
+  // gateway's address, or a script reading the wrong deployment file, would look
+  // exactly like a correct setup. Refuse the collision instead of documenting it.
+  const nonce = await cc.getTransactionCount(signer.address);
+  const predicted = getCreateAddress({from: signer.address, nonce});
+  log(`deployer nonce ${nonce}, this deployment will land at ${predicted}`);
+  if (predicted.toLowerCase() === gateway.toLowerCase()) {
+    throw new Error(
+      `This deployment would land at ${predicted}, the same address as the Sepolia gateway. ` +
+        'Send any transaction from the deployer to advance its nonce, then run again.',
+    );
   }
 
   const artifact = loadArtifact('Cr3dXVerifier.sol', 'Cr3dXVerifier');
@@ -67,8 +84,29 @@ async function main(): Promise<void> {
     throw new Error(`Deployed verifier reports gateway ${onChainGateway} and chainKey ${onChainKey}; expected ${gateway} and ${source.chainKey}`);
   }
 
+  if (address.toLowerCase() === gateway.toLowerCase()) {
+    throw new Error(`Verifier landed at ${address}, the same address as the Sepolia gateway. Refusing to record it.`);
+  }
+
+  // The superseded deployment stays in the record. Its facts are still on chain,
+  // and hiding why it was replaced would make the history of this repository
+  // less honest than the history of the chain it talks to.
+  const superseded = existing?.verifier
+    ? [
+        ...((existing.previousVerifiers as unknown[]) ?? []),
+        {
+          verifier: existing.verifier,
+          verifierDeploymentTx: existing.verifierDeploymentTx,
+          verifierDeploymentBlock: existing.verifierDeploymentBlock,
+          supersededAt: new Date().toISOString(),
+          reason,
+        },
+      ]
+    : ((existing?.previousVerifiers as unknown[]) ?? []);
+
   writeDeployment('creditcoin', {
     network: 'creditcoin3-testnet',
+    previousVerifiers: superseded,
     chainId: config.creditcoinChainId,
     chainKey: source.chainKey,
     sourceChainId: config.sourceEvmChainId,
