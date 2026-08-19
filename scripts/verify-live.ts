@@ -61,7 +61,7 @@ async function main(): Promise<void> {
 
   const deployment = readDeployment('creditcoin');
   if (!deployment?.verifier) {
-    throw new Error('No verifier in deployments/creditcoin.json. Run `npm run deploy:verifier` first.');
+    throw new Error('No verifier in deployments/creditcoin.json. Run `npm run deploy:creditcoin` first.');
   }
 
   const cc = evmProvider(config.creditcoinRpcUrl);

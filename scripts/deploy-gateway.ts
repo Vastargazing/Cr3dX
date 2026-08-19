@@ -1,7 +1,7 @@
 /**
  * Deploys Cr3dXGateway to Sepolia.
  *
- *   npm run deploy:gateway
+ *   npm run deploy:sepolia
  *
  * Requires DEPLOYER_PRIVATE_KEY in .env and a Sepolia account with test ETH.
  * Writes the resulting address to deployments/sepolia.json, which is committed:

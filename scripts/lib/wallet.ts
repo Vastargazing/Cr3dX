@@ -1,23 +1,32 @@
 import { JsonRpcProvider, Wallet } from 'ethers';
 
 /**
- * Builds a signer from `DEPLOYER_PRIVATE_KEY`.
+ * Builds a signer from a named private-key environment variable.
  *
- * The key is read from the environment and nowhere else. It is never logged,
- * never written to a deployment record, and never passed to anything that
- * serialises its arguments. `.env` is git-ignored from the first commit.
+ * Keys are read from the environment and nowhere else. They are never logged,
+ * written to deployment records, or included in validation errors. `.env` is
+ * git-ignored from the first commit.
  */
-export function signerFromEnv(provider: JsonRpcProvider): Wallet {
-  const key = process.env.DEPLOYER_PRIVATE_KEY;
+export function signerFromEnv(provider: JsonRpcProvider, variable = 'DEPLOYER_PRIVATE_KEY'): Wallet {
+  const key = process.env[variable];
   if (!key) {
     throw new Error(
-      'DEPLOYER_PRIVATE_KEY is not set. Copy .env.example to .env and add the key of a Sepolia account ' +
-        'that holds both test ETH and test USDC. The key stays in .env, which is git-ignored.',
+      `${variable} is not set. Run \`npm run wallets:create\` to create the two local testnet wallets. ` +
+        'Their keys stay in .env, which is git-ignored.',
     );
   }
   const normalised = key.startsWith('0x') ? key : `0x${key}`;
   if (!/^0x[0-9a-fA-F]{64}$/.test(normalised)) {
-    throw new Error('DEPLOYER_PRIVATE_KEY is not a 32-byte hex private key. Not printing it.');
+    throw new Error(`${variable} is not a 32-byte hex private key. Not printing it.`);
   }
   return new Wallet(normalised, provider);
+}
+
+export function liveWallets(provider: JsonRpcProvider): { deployer: Wallet; borrower: Wallet } {
+  const deployer = signerFromEnv(provider, 'DEPLOYER_PRIVATE_KEY');
+  const borrower = signerFromEnv(provider, 'BORROWER_PRIVATE_KEY');
+  if (deployer.address.toLowerCase() === borrower.address.toLowerCase()) {
+    throw new Error('Wallet A and wallet B resolve to the same address. Two distinct testnet keypairs are required.');
+  }
+  return { deployer, borrower };
 }

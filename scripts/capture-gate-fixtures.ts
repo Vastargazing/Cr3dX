@@ -21,8 +21,8 @@
  * attested transaction where two proofs must come out of one transaction and an
  * impostor must be ignored.
  *
- * Requires DEPLOYER_PRIVATE_KEY, a deployed gateway in deployments/sepolia.json,
- * test ETH, and test USDC from https://faucet.circle.com.
+ * Requires both local testnet wallets, a deployed gateway in
+ * deployments/sepolia.json, test ETH for A/B, and test USDC.
  */
 import {
   AbiCoder,
@@ -40,7 +40,16 @@ import { evmProvider, errMessage, sleep } from './lib/rpc.js';
 import { ChainInfoReader } from './lib/precompiles.js';
 import { ProofBuilderClient, type SingleProof } from './lib/proofs.js';
 import { loadArtifact, readDeployment, writeDeployment } from './lib/artifacts.js';
-import { signerFromEnv } from './lib/wallet.js';
+import { liveWallets, signerFromEnv } from './lib/wallet.js';
+import {
+  diagnose,
+  FACE_VALUE,
+  FUNDING,
+  PARTIAL_A,
+  PARTIAL_B,
+  renderProjection,
+  type UsdcState,
+} from './lib/live-plan.js';
 
 const OUT_DIR = 'test/fixtures/gate';
 const log = (msg: string): void => console.log(`[gate] ${msg}`);
@@ -60,13 +69,6 @@ const ERC20_ABI = [
   'function decimals() view returns (uint8)',
 ];
 
-/** 1000 USDC and 1100 USDC in native units, the amounts the demo uses. */
-const FUNDING = 1_000_000n;
-const FACE_VALUE = 1_100_000n;
-/** Split of the double-funding fixture, so that neither piece covers the whole. */
-const PARTIAL_A = 400_000n;
-const PARTIAL_B = 600_000n;
-
 interface Captured {
   name: string;
   why: string;
@@ -77,43 +79,55 @@ interface Captured {
 async function main(): Promise<void> {
   warnIfProxyIgnored(log);
   const sepolia = evmProvider(config.sepoliaRpcUrl);
-  const signer = signerFromEnv(sepolia);
+  const { deployer: investor, borrower: payer } = liveWallets(sepolia);
 
   const deployment = readDeployment('sepolia');
   if (!deployment?.gateway) {
-    throw new Error('No gateway in deployments/sepolia.json. Run `npm run deploy:gateway` first.');
+    throw new Error('No gateway in deployments/sepolia.json. Run `npm run deploy:sepolia` first.');
   }
   const gatewayAddress = deployment.gateway as string;
-  const gateway = new Contract(gatewayAddress, GATEWAY_ABI, signer);
+  const gateway = new Contract(gatewayAddress, GATEWAY_ABI, investor);
   const tokenAddress = (await gateway.getFunction('token')()) as string;
-  const token = new Contract(tokenAddress, ERC20_ABI, signer);
+  const token = new Contract(tokenAddress, ERC20_ABI, investor);
+  const payerToken = token.connect(payer) as Contract;
+  const payerGateway = gateway.connect(payer) as Contract;
   const decimals = Number(await token.getFunction('decimals')());
 
   log(`gateway ${gatewayAddress}, token ${tokenAddress} with ${decimals} decimals`);
 
-  const need = FUNDING + FACE_VALUE + PARTIAL_A + PARTIAL_B;
-  const held = (await token.getFunction('balanceOf')(signer.address)) as bigint;
-  log(`account ${signer.address} holds ${formatUnits(held, decimals)} tokens, needs ${formatUnits(need, decimals)}`);
-  if (held < need) {
+  // Same projection and the same verdict as `npm run preflight`, deliberately.
+  // This run sends real transactions, so it refuses to start on balances that
+  // look like the wreckage of a previous attempt rather than a clean start.
+  const existingHelper = deployment.doubleFundingFixture as string | undefined;
+  const [investorHeld, payerHeld, helperHeld] = (await Promise.all([
+    token.getFunction('balanceOf')(investor.address),
+    token.getFunction('balanceOf')(payer.address),
+    existingHelper ? token.getFunction('balanceOf')(existingHelper) : Promise.resolve(0n),
+  ])) as [bigint, bigint, bigint];
+
+  const actual: UsdcState = {a: investorHeld, b: payerHeld, helper: helperHeld};
+  log(`A/investor ${investor.address}: ${formatUnits(investorHeld, decimals)} tokens`);
+  log(`B/borrower-payer ${payer.address}: ${formatUnits(payerHeld, decimals)} tokens`);
+  const diagnosis = diagnose(actual);
+  log('USDC through the ordered run, projected from these balances:');
+  for (const line of renderProjection(diagnosis.projection, decimals)) log(`  ${line}`);
+
+  if (diagnosis.verdict !== 'ready') {
+    const stage = diagnosis.stage ? ` These balances match exactly what ${diagnosis.stage} leaves behind.` : '';
     throw new Error(
-      `Not enough test USDC. Need ${formatUnits(need, decimals)}, have ${formatUnits(held, decimals)}. ` +
-        'Faucet: https://faucet.circle.com',
+      `Refusing to send transactions: ${diagnosis.summary}.${stage} ` +
+        `${diagnosis.actions.join('; ')}. Run \`npm run preflight\` for the full picture.`,
     );
   }
-
-  // One account plays every role unless separate keys are configured. The
-  // mechanism does not care; the recording reads better when they differ.
-  const borrower = process.env.BORROWER_ADDRESS ?? signer.address;
-  const investor = signer.address;
 
   const captured: Captured[] = [];
 
   // -- 1 and 2: the ordinary paths ----------------------------------------
-  await ensureAllowance(token, signer.address, gatewayAddress, need);
+  await ensureAllowance(token, investor.address, gatewayAddress, FUNDING);
 
   const dealSimple = keccakLabel('cr3dx/fixture/simple-deal');
-  log(`fund: deal ${dealSimple}, ${formatUnits(FUNDING, decimals)} to ${borrower}`);
-  const fundRc = await send(gateway.getFunction('fund')(dealSimple, borrower, FUNDING));
+  log(`fund: deal ${dealSimple}, ${formatUnits(FUNDING, decimals)} from A to B`);
+  const fundRc = await send(gateway.getFunction('fund')(dealSimple, payer.address, FUNDING));
   captured.push({
     name: 'fund',
     why: 'the ordinary investor-to-borrower path, one gateway event beside the token Transfer',
@@ -121,8 +135,14 @@ async function main(): Promise<void> {
     blockNumber: fundRc.blockNumber,
   });
 
-  log(`repay: deal ${dealSimple}, ${formatUnits(FACE_VALUE, decimals)} to ${investor}`);
-  const repayRc = await send(gateway.getFunction('repay')(dealSimple, investor, FACE_VALUE));
+  // `send` returns only after the receipt succeeds. This check deliberately
+  // sits between transactions: the minimum-funding plan relies on B receiving
+  // FUNDING before B can spend FACE_VALUE.
+  await requireTokenBalance(token, payer.address, FACE_VALUE, decimals, 'B after confirmed fund receipt');
+
+  await ensureAllowance(payerToken, payer.address, gatewayAddress, FACE_VALUE);
+  log(`repay: deal ${dealSimple}, ${formatUnits(FACE_VALUE, decimals)} from B to A`);
+  const repayRc = await send(payerGateway.getFunction('repay')(dealSimple, investor.address, FACE_VALUE));
   captured.push({
     name: 'repay',
     why: 'the ordinary repayment path',
@@ -130,16 +150,26 @@ async function main(): Promise<void> {
     blockNumber: repayRc.blockNumber,
   });
 
+  // The same invariant protects the reused funds: A must have received the
+  // repayment before approving/calling the double-funding helper.
+  await requireTokenBalance(
+    token,
+    investor.address,
+    PARTIAL_A + PARTIAL_B,
+    decimals,
+    'A after confirmed repay receipt',
+  );
+
   // -- 3: two genuine fundings and one impostor in one transaction ---------
-  const helperAddress = await ensureFixtureHelper(signer, gatewayAddress);
-  await ensureAllowance(token, signer.address, helperAddress, PARTIAL_A + PARTIAL_B);
+  const helperAddress = await ensureFixtureHelper(investor, gatewayAddress);
+  await ensureAllowance(token, investor.address, helperAddress, PARTIAL_A + PARTIAL_B);
 
   const helperArtifact = loadArtifact('DoubleFundingFixture.sol', 'DoubleFundingFixture');
-  const helper = new Contract(helperAddress, helperArtifact.abi as any, signer);
+  const helper = new Contract(helperAddress, helperArtifact.abi as any, investor);
   const dealDouble = keccakLabel('cr3dx/fixture/double-funded-deal');
   log(`double funding: deal ${dealDouble}, ${formatUnits(PARTIAL_A, decimals)} + ${formatUnits(PARTIAL_B, decimals)}`);
   const doubleRc = await send(
-    helper.getFunction('emitTwoFundingsAndOneImpostor')(dealDouble, borrower, PARTIAL_A, PARTIAL_B),
+    helper.getFunction('emitTwoFundingsAndOneImpostor')(dealDouble, payer.address, PARTIAL_A, PARTIAL_B),
   );
   captured.push({
     name: 'double-funding',
@@ -332,6 +362,26 @@ async function ensureAllowance(token: Contract, owner: string, spender: string, 
   log(`approving ${spender} for ${amount}`);
   const rc = await send(token.getFunction('approve')(spender, amount));
   log(`  approved in ${rc.hash}`);
+  const confirmed = (await token.getFunction('allowance')(owner, spender)) as bigint;
+  if (confirmed < amount) {
+    throw new Error(`Allowance for ${spender} is ${confirmed}, expected at least ${amount} after confirmed receipt`);
+  }
+}
+
+async function requireTokenBalance(
+  token: Contract,
+  account: string,
+  required: bigint,
+  decimals: number,
+  stage: string,
+): Promise<void> {
+  const held = (await token.getFunction('balanceOf')(account)) as bigint;
+  log(`${stage}: ${formatUnits(held, decimals)} tokens, need ${formatUnits(required, decimals)}`);
+  if (held < required) {
+    throw new Error(
+      `${stage} has ${formatUnits(held, decimals)} tokens, expected at least ${formatUnits(required, decimals)}`,
+    );
+  }
 }
 
 async function ensureFixtureHelper(signer: ReturnType<typeof signerFromEnv>, gateway: string): Promise<string> {
