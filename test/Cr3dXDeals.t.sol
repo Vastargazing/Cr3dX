@@ -177,17 +177,57 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT));
     }
 
-    function test_fundingAFinancedDealIsRejectedForever() public {
+    /// @notice Funding that arrives after the threshold is applied, not refused,
+    ///         and does not finance the deal a second time.
+    /// @dev The money moved on Sepolia. Refusing it here would destroy it, and
+    ///      would make the funded total depend on delivery order; see the test
+    ///      below. What must not happen twice is the crossing, and it does not.
+    function test_fundingAFinancedDealIsStillApplied() public {
         bytes32 dealId = _deal();
         _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
 
         bytes32 second = _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
         (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.evidenceStateOf(second);
-        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
-        assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.ALREADY_FUNDED));
+        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.APPLIED), "a surplus payment is still a payment");
+        assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.NONE));
 
-        assertEq(deals.getDeal(dealId).fundedAmount, FUNDING, "the second funding changed nothing");
+        assertEq(deals.getDeal(dealId).fundedAmount, FUNDING * 2, "the second funding is counted");
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.FINANCED));
         assertEq(credit.exposureOf(borrower), FACE_VALUE, "and did not double the exposure");
+        assertEq(credit.reservedOf(borrower), 0, "nor released the reserve twice");
+    }
+
+    /// @notice The funded total is the same whatever order the proofs arrive in.
+    ///
+    /// @dev The counterexample that removed `ALREADY_FUNDED`. Three payments of
+    ///      60, 50 and 40 against a threshold of 100: refusing anything after the
+    ///      crossing settles on 110, 150 or 100 depending only on which proof a
+    ///      worker built first, and all three describe money that really moved.
+    ///      Accumulating without a ceiling gives 150 every time. That is INV-3.
+    function test_fundingIsIndependentOfDeliveryOrder() public {
+        uint256[3] memory amounts = [uint256(60), 50, 40];
+        uint256[6] memory orders = [uint256(12), 21, 102, 120, 201, 210];
+
+        for (uint256 run = 0; run < orders.length; run++) {
+            _deployCr3dX();
+            bytes32 dealId = _createDeal(borrower, investor, 100, 200, DUE_BLOCK);
+
+            bytes32[3] memory ids;
+            for (uint256 i = 0; i < 3; i++) {
+                ids[i] = _recordFunding(dealId, investor, borrower, amounts[i], ON_TIME_HEIGHT);
+            }
+
+            // Three digits, base 3, so every permutation is covered.
+            uint256 order = orders[run];
+            for (uint256 position = 0; position < 3; position++) {
+                deals.applyEvidence(ids[(order / (10 ** (2 - position))) % 10]);
+            }
+
+            assertEq(deals.getDeal(dealId).fundedAmount, 150, "funded total");
+            assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.FINANCED), "status");
+            assertEq(credit.exposureOf(borrower), 200, "exposure");
+            assertEq(credit.reservedOf(borrower), 0, "reserve");
+        }
     }
 
     /// @notice Funding for a deal that does not exist yet waits, and applies once
@@ -248,19 +288,49 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
     }
 
-    function test_repaymentBeforeFundingWaitsForTheInvestorToBeFixed() public {
+    /// @notice A repayment to the right address that arrives before the funding
+    ///         waits, because an unfinanced deal owes nobody anything.
+    function test_repaymentBeforeFundingWaitsForTheDealToBeFinanced() public {
         bytes32 dealId = _deal();
         bytes32 repayment = _recordRepayment(dealId, borrower, investor, FACE_VALUE, ON_TIME_HEIGHT);
 
         deals.applyEvidence(repayment);
         (Cr3dXDeals.EvidenceState state,) = deals.evidenceStateOf(repayment);
-        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING), "no investor to compare against yet");
-        assertEq(deals.getDeal(dealId).repaidAmount, 0);
+        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING), "the deal is not financed yet");
+        assertEq(deals.getDeal(dealId).repaidAmount, 0, "and nothing was applied to it");
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.CREATED), "no closure without financing");
 
         _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
         deals.applyEvidence(repayment);
 
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
+    }
+
+    /// @notice A repayment sent to the wrong address is refused straight away,
+    ///         even before the deal is financed.
+    ///
+    /// @dev The recipient is checked against `designatedInvestor`, which the
+    ///      deal has carried since it was created. Comparing against the
+    ///      investor recorded by the funding instead would leave this payment
+    ///      waiting for a fact that, when it finally arrived, would refuse it.
+    ///      The two fields hold the same address once the deal is financed, so
+    ///      this changes nothing after that point.
+    function test_repaymentToTheWrongRecipientIsRefusedBeforeFundingToo() public {
+        bytes32 dealId = _deal();
+        bytes32 repayment = _recordRepayment(dealId, borrower, stranger, FACE_VALUE, ON_TIME_HEIGHT);
+
+        deals.applyEvidence(repayment);
+        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.evidenceStateOf(repayment);
+        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT), "not left waiting");
+        assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT));
+
+        // Financing the deal does not revive it: the address it went to is not
+        // the one the terms name, and the terms cannot change.
+        _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
+        deals.applyEvidence(repayment);
+        (state,) = deals.evidenceStateOf(repayment);
+        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
+        assertEq(deals.getDeal(dealId).repaidAmount, 0);
     }
 
     function test_repaymentToTheWrongRecipientIsRejectedForever() public {
@@ -747,16 +817,17 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         }
     }
 
-    /// @notice There are exactly three permanent reasons, and no fourth.
-    /// @dev INV-19. The specification says a fourth may not be added quietly:
+    /// @notice There are exactly two permanent reasons, and no third.
+    /// @dev INV-19. The specification says a third may not be added quietly:
     ///      first the gap in the document is recorded, then the reason. This
-    ///      test is what makes "quietly" impossible.
-    function test_thereAreExactlyThreePermanentReasons() public pure {
-        assertEq(uint8(type(Cr3dXDeals.RejectionReason).max), 3, "a reason was added or removed");
+    ///      test is what makes "quietly" impossible. It also pins the numbering,
+    ///      which the removal of `ALREADY_FUNDED` shifted: anything decoding the
+    ///      reason off chain has to move with it.
+    function test_thereAreExactlyTwoPermanentReasons() public pure {
+        assertEq(uint8(type(Cr3dXDeals.RejectionReason).max), 2, "a reason was added or removed");
         assertEq(uint8(Cr3dXDeals.RejectionReason.NONE), 0);
         assertEq(uint8(Cr3dXDeals.RejectionReason.WRONG_INVESTOR), 1);
-        assertEq(uint8(Cr3dXDeals.RejectionReason.ALREADY_FUNDED), 2);
-        assertEq(uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT), 3);
+        assertEq(uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT), 2);
     }
 
     /// @notice The credit layer belongs to the registry that deployed it.

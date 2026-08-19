@@ -39,14 +39,18 @@ import {Attestcoin} from "./libraries/Attestcoin.sol";
 ///
 ///      Their absence is the product, not a gap in it.
 ///
-///      **Applicable funding is never refused.** Not for a limit, not for a
-///      deadline, not because `dueBlock` has passed, not because the amount is
-///      short of `requiredFunding`. Every one of those checks looks like
+///      **Funding from the designated investor is never refused.** Not for a
+///      limit, not for a deadline, not because `dueBlock` has passed, not
+///      because the amount is short of `requiredFunding`, and not because the
+///      threshold has already been crossed. Every one of those checks looks like
 ///      diligence and every one of them destroys money that has already moved:
 ///      the payment happened on Sepolia and cannot be undone from here. Funding
-///      accumulates until the threshold is crossed, and only then does further
-///      funding become permanently inapplicable, because a deal cannot be
-///      financed twice.
+///      accumulates without a ceiling.
+///
+///      What happens once is not the payment but the crossing. The reserve turns
+///      into exposure at the instant the total first reaches the threshold, and
+///      never again, so a deal cannot be financed twice however many payments
+///      arrive.
 ///
 ///      **Order of delivery does not change the result.** Proofs arrive in
 ///      whatever order a worker manages to build them, which has nothing to do
@@ -79,15 +83,25 @@ contract Cr3dXDeals {
     }
 
     /// @notice Why a piece of evidence can never become applicable.
-    /// @dev Exactly three, and a fourth may not be added quietly. The test is
-    ///      general: a rejection is permanent if and only if no reachable future
-    ///      state of the system would make the evidence applicable. Anything
-    ///      that merely has not happened yet - the deal does not exist, the
-    ///      investor is not fixed - stays pending, because it can still happen.
+    ///
+    /// @dev Exactly two, and both are a mismatch against a field that cannot
+    ///      change: the designated investor and the recipient the deal's own
+    ///      terms imply. A third may not be added quietly. The test is general:
+    ///      a rejection is permanent if and only if no reachable future state of
+    ///      the system would make the evidence applicable. Anything that merely
+    ///      has not happened yet - the deal does not exist, the deal is not
+    ///      financed - stays pending, because it can still happen.
+    ///
+    ///      There used to be a third, `ALREADY_FUNDED`, for funding that arrived
+    ///      after the threshold was crossed. It made the funded total depend on
+    ///      the order the proofs arrived in, which is what INV-3 forbids. Three
+    ///      payments of 60, 50 and 40 against a threshold of 100 settle on 110,
+    ///      150 or 100 depending only on which proof was built first, and every
+    ///      one of those numbers describes money that really moved. See the note
+    ///      on `_applyFunding`.
     enum RejectionReason {
         NONE,
         WRONG_INVESTOR,
-        ALREADY_FUNDED,
         WRONG_RECIPIENT
     }
 
@@ -102,9 +116,12 @@ contract Cr3dXDeals {
     ///        rejected permanently rather than left pending.
     /// @param dealSeq Position in this registry's creation order, part of the
     ///        deal identifier.
-    /// @param investor Fixed when funding crosses the threshold, and the address
-    ///        repayment must reach. Zero until then, which is why a repayment
-    ///        that arrives first has to wait: there is nothing to compare against.
+    /// @param investor Who actually paid, recorded at the crossing. Zero until
+    ///        then. Nothing in this contract reads it: repayment is checked
+    ///        against `designatedInvestor`, which is known from creation, and
+    ///        the two are provably the same address because funding is only
+    ///        applied from the designated one. It is kept as the audit record of
+    ///        the crossing, not as an input to any decision.
     /// @param requiredFunding Amount that must arrive before the deal is financed.
     /// @param fundedAmount Total proven funding applied so far.
     /// @param faceValue Amount owed back. Reserved against the limit at creation.
@@ -456,9 +473,26 @@ contract Cr3dXDeals {
         return _applyRepayment(evidenceId, evidence);
     }
 
-    /// @dev Funding. The three permanent refusals are checked in the order the
-    ///      specification lists them, so that a fact which trips more than one
-    ///      always reports the same reason.
+    /// @dev Funding.
+    ///
+    ///      **Funding from the designated investor is always applied.** Not only
+    ///      while the deal is short of its threshold: afterwards too. Refusing a
+    ///      payment because the threshold was already crossed sounds like the
+    ///      obvious guard against financing a deal twice, and it is instead a
+    ///      way of making the funded total depend on which proof a worker
+    ///      happened to build first. Payments of 60, 50 and 40 against a
+    ///      threshold of 100 land on 110, 150 or 100 across the six delivery
+    ///      orders, and all three of those numbers are wrong in the same way:
+    ///      the money moved, so the total has to count it. That is INV-3.
+    ///
+    ///      What must not happen twice is not the payment, it is the crossing.
+    ///      The reserve becomes exposure at the instant the total first reaches
+    ///      the threshold, and the guard below is written as exactly that
+    ///      instant rather than as a property of the current total.
+    ///
+    ///      The two permanent refusals are checked in the order the
+    ///      specification lists them, so that a fact which trips both always
+    ///      reports the same reason.
     function _applyFunding(bytes32 evidenceId, Cr3dXVerifier.VerifiedEvidence memory evidence)
         private
         returns (EvidenceState)
@@ -470,34 +504,34 @@ contract Cr3dXDeals {
         // simply have been faster than the borrower.
         if (deal.status == DealStatus.NONE) return EvidenceState.VERIFIED_PENDING;
 
-        // The recipient is checked against an immutable field, so a payment that
-        // went to the wrong address can never become applicable.
+        // Both checks are against fields fixed when the deal was created, so
+        // neither can come true later.
         if (evidence.recipient != deal.borrower) return _reject(evidenceId, dealId, RejectionReason.WRONG_RECIPIENT);
         if (evidence.counterparty != deal.designatedInvestor) {
             return _reject(evidenceId, dealId, RejectionReason.WRONG_INVESTOR);
         }
-        // There is no way back out of `FINANCED`, so a second funding is not
-        // waiting for anything either.
-        if (deal.fundedAmount >= deal.requiredFunding) {
-            return _reject(evidenceId, dealId, RejectionReason.ALREADY_FUNDED);
-        }
 
-        // Accumulates. A short payment is not refused: the money moved, and
-        // refusing it here would destroy it exactly as a deadline check would.
-        uint256 funded = deal.fundedAmount + evidence.amount;
+        // Accumulates, before the threshold and after it. A short payment is not
+        // refused and neither is a surplus one: the money moved, and refusing it
+        // here would destroy it exactly as a deadline check would. A surplus is
+        // a gift from the investor to the borrower; there is no path back to the
+        // source chain, and inventing a refund here would be fiction.
+        uint256 fundedBefore = deal.fundedAmount;
+        uint256 funded = fundedBefore + evidence.amount;
+        uint256 required = deal.requiredFunding;
         deal.fundedAmount = funded;
         _applications[evidenceId] = Application(EvidenceState.APPLIED, RejectionReason.NONE);
         emit FundingApplied(dealId, evidenceId, evidence.amount, funded);
 
-        if (funded >= deal.requiredFunding) {
+        // The crossing, and only the crossing. `fundedAmount` never decreases,
+        // so this is true for exactly one applied funding however many arrive
+        // and in whatever order.
+        if (fundedBefore < required && funded >= required) {
             // The investor is taken from the proven log, not from whoever sent
-            // this transaction. Overpayment is kept: there is no path back to
-            // the source chain, and inventing a refund here would be fiction.
+            // this transaction.
             address investor = evidence.counterparty;
             deal.investor = investor;
             deal.status = DealStatus.FINANCED;
-            // Exactly once, at the crossing. Doing it per instalment would
-            // count the exposure again for every partial payment.
             credit.markFinanced(dealId);
             emit DealFinanced(dealId, investor, funded);
         }
@@ -516,11 +550,21 @@ contract Cr3dXDeals {
 
         if (deal.status == DealStatus.NONE) return EvidenceState.VERIFIED_PENDING;
 
-        address investor = deal.investor;
-        // Waiting, not refused. Until funding crosses the threshold there is no
-        // investor to compare the recipient against, so nothing can be decided.
-        if (investor == address(0)) return EvidenceState.VERIFIED_PENDING;
-        if (evidence.recipient != investor) return _reject(evidenceId, dealId, RejectionReason.WRONG_RECIPIENT);
+        // Checked against the designated investor, which is fixed at creation,
+        // rather than against the investor the funding recorded. The two are the
+        // same address once the deal is financed, because funding is only
+        // applied from the designated one; they differ only in that the
+        // designated one is known earlier. Comparing against the later field
+        // would leave a payment that went to the wrong address waiting forever
+        // for a fact that would refuse it.
+        if (evidence.recipient != deal.designatedInvestor) {
+            return _reject(evidenceId, dealId, RejectionReason.WRONG_RECIPIENT);
+        }
+        // Right address, wrong time. There is nothing to repay yet: the deal has
+        // not been financed, so it owes nobody anything. This waits rather than
+        // applying, because a deal that closed without ever being financed would
+        // contradict the lifecycle and INV-1.
+        if (deal.status == DealStatus.CREATED) return EvidenceState.VERIFIED_PENDING;
 
         // Who paid is not checked. The specification says the payer need not be
         // the borrower, and a debt settled by a third party is still settled.

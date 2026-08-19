@@ -80,8 +80,8 @@ anchor is the address.
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
 | `Cr3dXVerifier` | Creditcoin3 Testnet | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
-| `Cr3dXDeals` | Creditcoin3 Testnet | `0x52B54F4aC836C5b32fFec72a2f03f1C22174B756` |
-| `Cr3dXCredit` | Creditcoin3 Testnet | `0x240B41fFE4F5A1D6047c9024873D636D70a99780` |
+| `Cr3dXDeals` | Creditcoin3 Testnet | `0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c` |
+| `Cr3dXCredit` | Creditcoin3 Testnet | `0x8234C87eCE3a88a7A9E2f987Ec44acc9f801529d` |
 | `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
 
 An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
@@ -95,6 +95,14 @@ deployment script now refuses such a collision outright.
 Its facts are still on chain, and the redeployed verifier reproduced every
 evidence identifier byte for byte, because an identifier is a hash of the source
 fact rather than of the contract that recorded it.
+
+An earlier registry at `0x52B54F4aC836C5b32fFec72a2f03f1C22174B756`, with its
+credit layer, is kept in `deployments/creditcoin.json` with the reason. It
+enforced the rules of specification v0.4.2, which refused funding from the
+designated investor once the threshold had been crossed. That refusal made the
+funded total depend on the order proofs arrived in, so v0.4.4 removed it, and a
+registry cannot be migrated: its deals, reserves and credit history are its
+state.
 
 `Cr3dXCredit` was deployed by `Cr3dXDeals`, in the registry's own constructor.
 The two need each other's addresses, and the usual answer to that circle is an
@@ -268,15 +276,15 @@ From the run of 2026-08-19, measured rather than estimated:
 |---|---|---:|---:|
 | `createDeal` | Creditcoin | 259,548 | |
 | `fund` | Sepolia | 59,292 | |
-| `submitAndApply`, funding | Creditcoin | 336,658 | 10 |
-| `submitAndApply`, refused funding | Creditcoin | 257,292 | 7 |
+| `submitAndApply`, funding | Creditcoin | 334,222 | 10 |
+| `submitAndApply`, refused funding | Creditcoin | 253,960 | 7 |
 | `repay` | Sepolia | 59,260 | |
-| `submitAndApply`, repayment | Creditcoin | 338,044 | 1 |
+| `submitAndApply`, repayment | Creditcoin | 340,088 | 9 |
 
-The repayment carried one continuity root and still cost more than the funding
-that carried ten, because a root is worth roughly 380 gas while applying a
-repayment writes more state than applying a funding. The refused funding is the
-floor: verification plus one cold write recording the decision.
+Applying a repayment costs more than applying a funding at a comparable proof
+size, because it writes more: two accumulators, the exposure, and the canonical
+outcome with its counters. The refused funding is the floor: verification plus
+one cold write recording the decision.
 
 **Both gateway functions spend an allowance.** `fund` and `repay` move tokens with
 `transferFrom`, so the token must be approved for the gateway address first. The
