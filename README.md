@@ -76,8 +76,22 @@ anchor is the address.
 
 ### Deployed contracts
 
-Live addresses are recorded in `deployments/sepolia.json` and in
-[docs/STATUS.md](docs/STATUS.md) as they are deployed.
+| Contract | Network | Address |
+|---|---|---|
+| `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
+| `Cr3dXVerifier` | Creditcoin3 Testnet | `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` |
+| `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
+
+The gateway and the verifier share an address. That is arithmetic, not a
+copy-paste error: both were deployed by the same account as its first
+transaction on each chain, and a contract address is derived from the deployer
+and its nonce. They are separate contracts on separate chains.
+
+`DoubleFundingFixture` is test infrastructure and not part of the system. It
+exists to produce one transaction that an externally owned account cannot: two
+gateway events plus a counterfeit, all in one call.
+
+The same addresses are recorded in `deployments/`, which the scripts read.
 
 ## Repository layout
 
@@ -259,6 +273,11 @@ NODE_USE_ENV_PROXY=1 npm run probe
 
 ## Status
 
-Network measured, the Sepolia gateway and the Creditcoin verifier written and
-tested. The deals registry and credit layer are next. Running detail is in
-[docs/STATUS.md](docs/STATUS.md).
+The cross-chain path works end to end on live testnets. A real Sepolia
+transaction carrying two genuine gateway events and one counterfeit was proven
+through Attestcoin and recorded on Creditcoin as exactly two immutable facts,
+with the counterfeit ignored because its emitter was not the gateway. Three
+transactions, four facts, no simulation anywhere in the path.
+
+The deals registry and the credit layer are next. Running detail, transaction
+hashes and measured gas are in [docs/STATUS.md](docs/STATUS.md).

@@ -1,0 +1,29 @@
+[
+  {
+    "name": "fund",
+    "why": "the ordinary investor-to-borrower path, one gateway event beside the token Transfer",
+    "txHash": "0x7344adfaab250aba574737c284e797c5bdac388afb480767bf260a4571cb7ce2",
+    "height": 11521633,
+    "logs": 2,
+    "gatewayLogs": 1,
+    "impostorLogs": 0
+  },
+  {
+    "name": "repay",
+    "why": "the ordinary repayment path",
+    "txHash": "0xd1d8a4f37fe8a243429c3621f7b54c3325030046af4ae49d898af06f41b4408c",
+    "height": 11521636,
+    "logs": 2,
+    "gatewayLogs": 1,
+    "impostorLogs": 0
+  },
+  {
+    "name": "double-funding",
+    "why": "two FundingMade events for the same deal from the real gateway, differing only by event nonce, plus a counterfeit with the same topic0 from a lookalike contract",
+    "txHash": "0x5aab6aa7af7218f775984d0a93c735d3be870a1602a139daa9d4f6dc21b4c2b8",
+    "height": 11521639,
+    "logs": 7,
+    "gatewayLogs": 2,
+    "impostorLogs": 1
+  }
+]
