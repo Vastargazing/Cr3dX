@@ -291,10 +291,112 @@ The constant therefore has to cover four things, all in source blocks:
 `attestationGracePeriod = 600` is a constructor argument of the deals contract, not a hard-coded
 constant, so a demo deployment can use a smaller value to show the default path without waiting.
 
-**Getting this wrong is asymmetric.** Oversizing it delays a default record on a deal that is already
-unrecoverable. Undersizing it fabricates defaults against healthy borrowers. Marking a deal defaulted is
-not terminal in Cr3dX either way: a later proven repayment still resolves it to `PAID_ON_TIME` or
-`PAID_LATE`, decided by the source block height of the payment rather than by when the proof happened to
-arrive. The grace period keeps the record honest; it is not a safety boundary.
+**What this constant is not.** It does not carry correctness. Correctness comes from the settlement rule:
+an outcome is decided by the source block height of the payment, never by when its proof arrived. A deal
+that was marked defaulted is still resolved to `PAID_ON_TIME` by a later proof of a payment made before
+`dueBlock`. That separation is deliberate, and it is what makes the parameter safe to get wrong: if
+correctness rested on the grace period, a single `MaxCatchup`-sized jump in the attested height would
+break it.
+
+What the constant does carry is the honesty of the record. Oversizing it delays a default marking on a
+deal that is already unrecoverable. Undersizing it stamps defaults on healthy borrowers for reasons that
+have nothing to do with them, and a credit history full of defaults that were later reversed is worth
+less than one that never fabricated them.
 
 <!-- probe:end -->
+
+---
+
+## The decoder, and a correction to the reconnaissance report
+
+Written by hand, outside the probe block. Section 8 above is the live measurement;
+this is what was built on top of it and what it cost.
+
+### Wire format, settled
+
+The reconnaissance report (`docs/PRECOMPILE_FINDINGS.md`, R4) describes `encodedTx`
+as a single ABI-encoded tuple with a flat field list that branches five ways by
+transaction type, and concludes that a Solidity consumer faces "a five-way decoder".
+That is an accurate account of the *logical* fields and it is what the SDK exposes
+as its `types` array, but it is not the shape on the wire. The actual encoding is
+
+```
+abi.encode(uint8 txType, bytes[] chunks)
+```
+
+and the receipt chunk is always the last element, with the same layout for every
+transaction type:
+
+```
+abi.encode(uint8 status, uint64 gasUsed, (address,bytes32[],bytes)[] logs, bytes logsBloom)
+```
+
+Confirmed two ways. In the encoder source, `usc-abi-encoding` 0.5.0,
+`src/abi/v1.rs`: types 0, 1 and 2 build three chunks with `encode_receipt_fields`
+last (lines 79-81, 101-103, 124-126), types 3 and 4 build four with the same field
+last (lines 181-183, 208-210), and `abi_encode` wraps them as
+`Tuple(type_id, Array(chunks))` at line 289. On the live network, against captured
+Sepolia blobs of types 0, 1, 2 and 3.
+
+The practical difference is large. A consumer that needs the receipt status and the
+logs, which is exactly what Cr3dX needs and nothing more, writes one `abi.decode`
+and never looks at the transaction type. The five-way branch is only required for
+reconstructing the canonical transaction hash, which Cr3dX does not do.
+
+### What this buys, beyond convenience
+
+`from` and `gasUsed` are the two fields the protocol carries but the canonical
+Ethereum roots do not cover, and the specification forbids letting either influence
+any Cr3dX decision. Both live in chunks this decoder never opens; `gasUsed` is
+touched only because ABI decoding is positional, and is discarded on the same line.
+The rule is enforced by the shape of the function rather than by anyone remembering
+it during review.
+
+### Test fixtures
+
+`scripts/capture-fixtures.ts` scans attested Sepolia blocks for the shapes that
+break decoders rather than the shapes that flatter them, and freezes them under
+`test/fixtures/`. Expected values are read from `eth_getTransactionReceipt`, then
+cross-checked field by field against the attested blob before a fixture is written.
+A decoder that is consistently wrong therefore cannot pass: it would have to be
+wrong in exactly the same way as Ethereum's own receipt.
+
+| Fixture | Type | Status | Logs | Blob | Why it is in the set |
+|---|---|---|---|---|---|
+| `eip1559-two-logs` | 2 | 1 | 2 | 2,048 B | the exact shape of a Cr3dX gate call |
+| `eip1559-no-logs` | 2 | 1 | 0 | 1,248 B | empty log array must decode, not revert |
+| `reverted` | 0 | **0** | 0 | 1,376 B | a valid proof of a failed transaction |
+| `legacy` | 0 | 1 | 17 | 6,848 B | different chunk layout |
+| `access-list` | 1 | 1 | 1 | 1,632 B | different chunk layout |
+| `blob-carrying` | 3 | 1 | 3 | 3,936 B | four chunks, the strongest test of the claim |
+| `many-logs` | 2 | 1 | 43 | 17,376 B | long array, where offset mistakes surface |
+
+Type 4 (EIP-7702 authorization) did not appear in the scanned range. Its receipt
+chunk is last in the encoder source like every other type, but that is a reading of
+the code, not a live observation.
+
+### Decoding cost
+
+Measured by `forge test --match-test test_decodingCost`:
+
+| Fixture | Blob | Logs | Gas |
+|---|---|---|---|
+| `eip1559-no-logs` | 1,248 B | 0 | 3,817 |
+| `reverted` | 1,376 B | 0 | 3,829 |
+| `access-list` | 1,632 B | 1 | 5,380 |
+| `eip1559-two-logs` | 2,048 B | 2 | **6,943** |
+| `blob-carrying` | 3,936 B | 3 | 9,238 |
+| `legacy` | 6,848 B | 17 | 29,993 |
+| `many-logs` | 17,376 B | 43 | 71,200 |
+
+The row that matters is the gate-shaped one: 6,943 gas against roughly 47,000 for
+the verification it sits inside, most of which is calldata. Decoding is not where
+this system spends money, so the decoder is written for the compiler's bounds-checked
+decoder rather than for hand-rolled assembly that would save a few thousand gas and
+introduce a class of bug the specification has no defence against.
+
+### EVM target
+
+Creditcoin3 runs `fp_evm::Config::cancun()` (`runtime/src/lib.rs:461`), so Cancun
+opcodes are available on the deployment target. Contracts compile with
+`evm_version = "cancun"` for both networks.

@@ -60,28 +60,59 @@ registry, which is not the EVM chain id. It is resolved at runtime; see
 ## Repository layout
 
 ```
-contracts/     Solidity sources (Sepolia gate, Creditcoin verifier, deals, credit)
-scripts/       TypeScript tooling: network probe, deployment, demo driver
-  lib/         shared clients for the precompiles and the proof builder
-worker/        proof worker: watches the gate, waits for attestation, submits
-docs/          specification, protocol reconnaissance, integration notes, status
-data/probe/    raw measurement output, committed as evidence
+contracts/       Solidity sources
+  interfaces/    the Attestcoin precompiles, transcribed from the runtime
+  libraries/     decoding of proven source transactions
+test/            Foundry tests
+  fixtures/      transaction blobs captured from live Sepolia
+scripts/         TypeScript tooling: network probe, fixture capture, deployment
+  lib/           shared clients for the precompiles and the proof builder
+worker/          proof worker: watches the gate, waits for attestation, submits
+docs/            specification, protocol reconnaissance, integration notes, status
+data/probe/      raw measurement output, committed as evidence
 ```
+
+Contracts and their tests are built with Foundry, because the specification calls
+for invariant fuzzing. Scripts, deployment and the worker are TypeScript on ethers
+v6, which is also what the protocol SDK is written in.
 
 ## Setup
 
-Requires Node.js 20 or newer.
+Requires Node.js 20 or newer and Foundry.
 
 ```sh
-git clone https://github.com/Vastargazing/Cr3dX.git
+git clone --recurse-submodules https://github.com/Vastargazing/Cr3dX.git
 cd Cr3dX
 npm install
+curl -L https://foundry.paradigm.xyz | bash && foundryup
 cp .env.example .env
 ```
 
+If you already cloned without submodules, `git submodule update --init --recursive`
+fetches the Solidity dependencies.
+
 `.env` is git-ignored and is the only place credentials are ever read from. The
 defaults in `.env.example` point at public endpoints and are enough to run the
-probe, which is read-only and needs no key.
+probe and the test suite, both of which are read-only and need no key.
+
+## Building and testing
+
+```sh
+npm run build      # forge build
+npm test           # forge test
+npm run typecheck  # tsc --noEmit over the TypeScript side
+```
+
+The decoder tests run against transaction blobs captured from live Sepolia rather
+than against blobs written by hand. To refresh them:
+
+```sh
+npm run capture:fixtures
+```
+
+The capture reads expected values from `eth_getTransactionReceipt` and cross-checks
+them against the attested blob before writing anything, so a fixture can only be
+written if the protocol's encoding and Ethereum's own receipt agree.
 
 ## Measuring the live network
 
@@ -117,4 +148,6 @@ NODE_USE_ENV_PROXY=1 npm run probe
 
 ## Status
 
-Network measurement complete. Contracts are next.
+Network measured, contract foundation in place: the precompile interfaces and the
+decoder for proven source transactions, tested against live blobs. The Sepolia gate
+is next. Running detail is in [docs/STATUS.md](docs/STATUS.md).

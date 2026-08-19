@@ -687,11 +687,17 @@ function renderGrace(lag: LagResult, interval: number, grace: Grace): string {
     `\`attestationGracePeriod = ${fmt.int(grace.recommended)}\` is a constructor argument of the deals contract, not a hard-coded`,
     'constant, so a demo deployment can use a smaller value to show the default path without waiting.',
     '',
-    '**Getting this wrong is asymmetric.** Oversizing it delays a default record on a deal that is already',
-    'unrecoverable. Undersizing it fabricates defaults against healthy borrowers. Marking a deal defaulted is',
-    'not terminal in Cr3dX either way: a later proven repayment still resolves it to `PAID_ON_TIME` or',
-    '`PAID_LATE`, decided by the source block height of the payment rather than by when the proof happened to',
-    'arrive. The grace period keeps the record honest; it is not a safety boundary.',
+    '**What this constant is not.** It does not carry correctness. Correctness comes from the settlement rule:',
+    'an outcome is decided by the source block height of the payment, never by when its proof arrived. A deal',
+    'that was marked defaulted is still resolved to `PAID_ON_TIME` by a later proof of a payment made before',
+    '`dueBlock`. That separation is deliberate, and it is what makes the parameter safe to get wrong: if',
+    'correctness rested on the grace period, a single `MaxCatchup`-sized jump in the attested height would',
+    'break it.',
+    '',
+    'What the constant does carry is the honesty of the record. Oversizing it delays a default marking on a',
+    'deal that is already unrecoverable. Undersizing it stamps defaults on healthy borrowers for reasons that',
+    'have nothing to do with them, and a credit history full of defaults that were later reversed is worth',
+    'less than one that never fabricated them.',
   ].join('\n');
 }
 
