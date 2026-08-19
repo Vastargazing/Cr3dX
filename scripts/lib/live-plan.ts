@@ -302,3 +302,28 @@ export const MIN_SEPOLIA_ETH_B = 5_000_000_000_000_000n; // 0.005 ETH
  * dispenses at least that much in one request.
  */
 export const MIN_CREDITCOIN_CTC_A = 10_000_000_000_000_000n; // 0.01 CTC
+
+/**
+ * Creditcoin gas for wallet B, which is the borrower and therefore the account
+ * that calls `createDeal`.
+ *
+ * `createDeal` writes four cold slots in the registry and two in the credit
+ * layer, which is roughly 250,000 gas, about 0.000125 CTC at the observed 0.5
+ * gwei. 0.005 CTC is forty times that.
+ *
+ * B does not need to be fauceted for it: `npm run deal:live` tops B up from A
+ * when it is short, because A holds the CTC and a transfer between the
+ * operator's own two wallets is cheaper than a faucet round trip in the middle
+ * of a demo. The threshold is here so that `preflight` can say whether the
+ * top-up will be needed and whether A can afford it.
+ */
+export const MIN_CREDITCOIN_CTC_B = 5_000_000_000_000_000n; // 0.005 CTC
+
+/**
+ * USDC that wallet B has to hold beyond the capture run, for `deal:live`.
+ *
+ * The deal run pays out the face value and receives the funding, so the only
+ * new money is the margin between them, plus the single native unit of the
+ * impostor funding, which is a self-transfer and comes straight back.
+ */
+export const DEAL_RUN_USDC_B = FACE_VALUE - FUNDING + 1n;

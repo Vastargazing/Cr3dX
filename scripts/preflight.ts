@@ -4,8 +4,10 @@ import { existsSync } from 'node:fs';
 import { config, warnIfProxyIgnored } from './lib/config.js';
 import { readDeployment } from './lib/artifacts.js';
 import {
+  DEAL_RUN_USDC_B,
   diagnose,
   MIN_CREDITCOIN_CTC_A,
+  MIN_CREDITCOIN_CTC_B,
   MIN_SEPOLIA_ETH_A,
   MIN_SEPOLIA_ETH_B,
   renderProjection,
@@ -25,6 +27,13 @@ const ERC20_ABI = [
 ];
 const GATEWAY_ABI = ['function token() view returns (address)'];
 const VERIFIER_ABI = ['function chainKey() view returns (uint64)', 'function gateway() view returns (address)'];
+const DEALS_ABI = [
+  'function verifier() view returns (address)',
+  'function credit() view returns (address)',
+  'function chainKey() view returns (uint64)',
+  'function attestationGracePeriod() view returns (uint64)',
+];
+const CREDIT_ABI = ['function deals() view returns (address)', 'function baseLimit() view returns (uint256)'];
 
 interface CheckState {
   failures: string[];
@@ -101,14 +110,15 @@ async function main(): Promise<void> {
   // here means a run stopped somewhere it should not have.
   const helperAddress = readDeployment('sepolia')?.doubleFundingFixture as string | undefined;
 
-  const [ethA, ethB, ctcA, usdcA, usdcB, usdcHelper] = (await Promise.all([
+  const [ethA, ethB, ctcA, ctcB, usdcA, usdcB, usdcHelper] = (await Promise.all([
     sepolia.getBalance(sepoliaWallets.deployer.address),
     sepolia.getBalance(sepoliaWallets.borrower.address),
     creditcoin.getBalance(creditcoinWallets.deployer.address),
+    creditcoin.getBalance(creditcoinWallets.borrower.address),
     token.getFunction('balanceOf')(sepoliaWallets.deployer.address),
     token.getFunction('balanceOf')(sepoliaWallets.borrower.address),
     helperAddress ? token.getFunction('balanceOf')(getAddress(helperAddress)) : Promise.resolve(0n),
-  ])) as [bigint, bigint, bigint, bigint, bigint, bigint];
+  ])) as [bigint, bigint, bigint, bigint, bigint, bigint, bigint];
 
   const actual: UsdcState = {a: usdcA, b: usdcB, helper: usdcHelper};
   reportUsdcChain(state, actual, decimals, helperAddress);
@@ -117,11 +127,17 @@ async function main(): Promise<void> {
   requireAtLeast(state, 'A', 'Sepolia ETH', ethA, MIN_SEPOLIA_ETH_A, formatEther);
   requireAtLeast(state, 'A', 'test CTC', ctcA, MIN_CREDITCOIN_CTC_A, formatEther);
   requireAtLeast(state, 'B', 'Sepolia ETH', ethB, MIN_SEPOLIA_ETH_B, formatEther);
-  log('OK B test CTC: none required');
+  reportBorrowerCtc(state, ctcA, ctcB);
+  log(
+    `note: \`deal:live\` spends ${formatUnits(DEAL_RUN_USDC_B, decimals)} USDC of B's own on top of the capture run: ` +
+      'B pays the face value and receives the funding, so only the margin between them is new money',
+  );
 
   for (const artifact of [
     'out/Cr3dXGateway.sol/Cr3dXGateway.json',
     'out/Cr3dXVerifier.sol/Cr3dXVerifier.json',
+    'out/Cr3dXDeals.sol/Cr3dXDeals.json',
+    'out/Cr3dXCredit.sol/Cr3dXCredit.json',
     'out/DoubleFundingFixture.sol/DoubleFundingFixture.json',
   ]) {
     if (existsSync(artifact)) log(`OK build artifact: ${artifact}`);
@@ -141,7 +157,37 @@ async function main(): Promise<void> {
   if (state.failures.length || state.funding.length) {
     throw new Error(`${state.failures.length} configuration blocker(s), ${state.funding.length} funding action(s)`);
   }
-  log('READY: npm run deploy:sepolia && npm run capture:gate && npm run deploy:creditcoin && npm run verify:live');
+  log(
+    'READY: npm run deploy:sepolia && npm run capture:gate && npm run deploy:creditcoin && ' +
+      'npm run verify:live && npm run deploy:deals && npm run deal:live',
+  );
+}
+
+/**
+ * Wallet B needs Creditcoin gas now that it is the account that creates deals.
+ *
+ * This is not a faucet action when A can cover it, because `deal:live` tops B up
+ * itself. Reporting it as one would send the operator looking for a faucet that
+ * dispenses to an address they could have funded from their other wallet in one
+ * transaction. It becomes a blocker only when neither wallet has the gas.
+ */
+function reportBorrowerCtc(state: CheckState, ctcA: bigint, ctcB: bigint): void {
+  if (ctcB >= MIN_CREDITCOIN_CTC_B) {
+    log(`OK B test CTC: ${formatEther(ctcB)} held, ${formatEther(MIN_CREDITCOIN_CTC_B)} required to create a deal`);
+    return;
+  }
+  const topUpCovered = ctcA >= MIN_CREDITCOIN_CTC_A + MIN_CREDITCOIN_CTC_B;
+  if (topUpCovered) {
+    log(
+      `OK B test CTC: ${formatEther(ctcB)} held; \`deal:live\` will top B up from A, which holds ` +
+        `${formatEther(ctcA)}`,
+    );
+    return;
+  }
+  state.funding.push(
+    `B: send at least ${formatEther(MIN_CREDITCOIN_CTC_B - ctcB)} more test CTC, or top A up so it can cover the transfer`,
+  );
+  log(`NEEDS FUNDS B test CTC: ${formatEther(ctcB)} held and A cannot cover the top-up either`);
 }
 
 /**
@@ -239,6 +285,40 @@ async function checkDeployments(
       ) {
         state.failures.push(`Verifier ${verifier} trusts gateway ${onChainGateway}, not ${sourceDeployment.gateway}`);
       } else log(`OK existing Creditcoin verifier: ${verifier}`);
+    }
+  }
+
+  if (!targetDeployment?.deals) {
+    log('PENDING Creditcoin registry: deploy:deals will create it, and the credit layer with it');
+    return;
+  }
+  const dealsAddress = getAddress(targetDeployment.deals as string);
+  if ((await creditcoin.getCode(dealsAddress)) === '0x') {
+    state.failures.push(`Creditcoin deployment record points to a registry at ${dealsAddress}, which has no code`);
+    return;
+  }
+  const registry = new Contract(dealsAddress, DEALS_ABI, creditcoin);
+  const [trustedVerifier, creditAddress, registryChainKey, grace] = (await Promise.all([
+    registry.getFunction('verifier')(),
+    registry.getFunction('credit')(),
+    registry.getFunction('chainKey')(),
+    registry.getFunction('attestationGracePeriod')(),
+  ])) as [string, string, bigint, bigint];
+
+  if (targetDeployment.verifier && trustedVerifier.toLowerCase() !== (targetDeployment.verifier as string).toLowerCase()) {
+    state.failures.push(`Registry ${dealsAddress} trusts verifier ${trustedVerifier}, not ${targetDeployment.verifier}`);
+  } else if (chainKey !== undefined && Number(registryChainKey) !== chainKey) {
+    state.failures.push(`Registry ${dealsAddress} uses chainKey ${registryChainKey}, expected ${chainKey}`);
+  } else {
+    // The credit layer answering to anything but this registry would mean the
+    // pairing was made after deployment, which is the one thing the design does
+    // not allow.
+    const owner = (await new Contract(creditAddress, CREDIT_ABI, creditcoin).getFunction('deals')()) as string;
+    if (owner.toLowerCase() !== dealsAddress.toLowerCase()) {
+      state.failures.push(`Credit layer ${creditAddress} answers to ${owner}, not to the registry ${dealsAddress}`);
+    } else {
+      log(`OK existing Creditcoin registry: ${dealsAddress}, grace ${grace} source blocks`);
+      log(`OK existing Creditcoin credit layer: ${creditAddress}, paired with the registry that deployed it`);
     }
   }
 }
