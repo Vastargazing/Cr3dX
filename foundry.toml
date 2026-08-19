@@ -14,7 +14,10 @@ solc = "0.8.28"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+# The verifier builds an eight-field struct from decoded log data inside a loop,
+# which exhausts the legacy code generator's stack. The IR pipeline handles it and
+# optimises better; the cost is slower compilation, which this project can afford.
+via_ir = true
 
 bytecode_hash = "none"
 cbor_metadata = false

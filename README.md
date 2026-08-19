@@ -152,7 +152,17 @@ nowhere else, is never printed, and `.env` is git-ignored.
 npm run build
 npm run deploy:gateway    # checks the token, then deploys Cr3dXGateway
 npm run capture:gate      # approve, fund, repay, and prove all of it
+npm run deploy:verifier   # deploys Cr3dXVerifier to Creditcoin
+npm run verify:live       # the whole path, end to end, nothing simulated
 ```
+
+`npm run verify:live` is the claim the project stands on, executed rather than
+asserted: a real Sepolia transaction, a freshly built Attestcoin proof, on-chain
+verification, and one immutable fact per genuine gateway event, with a lookalike
+event in the same transaction ignored. It fetches proofs fresh every run and
+never replays the ones stored in the fixtures, because a continuity proof stops
+verifying once the attestation it anchors to has been pruned. See
+[docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
 
 **Both gateway functions spend an allowance.** `fund` and `repay` move tokens with
 `transferFrom`, so the token must be approved for the gateway address first. The
@@ -201,6 +211,6 @@ NODE_USE_ENV_PROXY=1 npm run probe
 
 ## Status
 
-Network measured, decoder for proven source transactions in place, Sepolia gateway
-written and tested. The Creditcoin verifier is next. Running detail is in
+Network measured, the Sepolia gateway and the Creditcoin verifier written and
+tested. The deals registry and credit layer are next. Running detail is in
 [docs/STATUS.md](docs/STATUS.md).

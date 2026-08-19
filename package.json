@@ -14,7 +14,9 @@
     "build": "forge build",
     "test": "forge test",
     "deploy:gateway": "tsx scripts/deploy-gateway.ts",
-    "capture:gate": "tsx scripts/capture-gate-fixtures.ts"
+    "capture:gate": "tsx scripts/capture-gate-fixtures.ts",
+    "deploy:verifier": "tsx scripts/deploy-verifier.ts",
+    "verify:live": "tsx scripts/verify-live.ts"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",
