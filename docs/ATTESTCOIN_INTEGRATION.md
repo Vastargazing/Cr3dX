@@ -400,3 +400,63 @@ introduce a class of bug the specification has no defence against.
 Creditcoin3 runs `fp_evm::Config::cancun()` (`runtime/src/lib.rs:461`), so Cancun
 opcodes are available on the deployment target. Contracts compile with
 `evm_version = "cancun"` for both networks.
+
+---
+
+## Proofs expire, facts do not
+
+Found while building the verifier, and it changes what the worker has to do.
+
+Every fixture captured on the previous stage stopped verifying about two hours
+after capture. The precompile rejects them with:
+
+```
+execution reverted: "Continuity proof does not match attestation or checkpoint"
+```
+
+Nothing was wrong with the fixtures. Requesting a **fresh** proof for the same
+transaction returns:
+
+| | Captured proof | Fresh proof, same transaction |
+|---|---|---|
+| `encodedTx` | identical | identical |
+| Merkle proof | identical | identical |
+| `lowerEndpointDigest` | identical | identical |
+| Continuity roots | 5 | **35** |
+| `verify` on chain | reverts | `true` |
+
+### Why
+
+A continuity proof chains from its lower endpoint through one root per source
+block until it reaches something the chain still holds: an attestation or a
+checkpoint. Attestations are retained for a bounded window and then pruned;
+checkpoints survive, and there is one per ten attestations, which at an
+attestation interval of ten source blocks means roughly one per hundred blocks.
+
+So a fresh proof anchors to a nearby attestation and is short. Once that
+attestation is pruned, the same fact is still provable, but only by chaining out
+to the next surviving checkpoint, which is further away. The proof gets longer.
+The fact does not change.
+
+### What follows for Cr3dX
+
+**A proof is perishable; treat it as a message in flight, not as stored state.**
+The worker must not queue a built proof and retry it hours later after a failure.
+On retry it rebuilds. A retry loop that replays a stale proof will fail forever
+against a chain that would happily accept the fact, which is the worst kind of
+outage: permanent, self-inflicted, and looking exactly like a protocol problem.
+
+**Fixtures store the transaction hash, not the proof.** `test/fixtures/gate/*.json`
+carries the proof for reference, but `scripts/verify-live.ts` ignores it and
+fetches a fresh one. A test that replayed a stored proof would go red on its own
+after a couple of hours and tell nobody anything true.
+
+**Cost drifts upward with age, then settles.** Thirty extra roots is about 960
+extra bytes of calldata, roughly 15,000 gas, plus the precompile's 48 gas per
+root. Modest, and it stops growing once the proof is anchored to the checkpoint
+grid rather than to a pruned attestation. Proving promptly is still cheaper than
+proving late.
+
+**Nothing is lost by waiting.** The retention window is a cost question, not a
+correctness one. A funding proven a week late is the same funding, and the deals
+contract settles it against the source block height either way.

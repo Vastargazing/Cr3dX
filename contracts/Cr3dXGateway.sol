@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ICr3dXGatewayEvents} from "./interfaces/ICr3dXGatewayEvents.sol";
 
 /// @title Cr3dXGateway
 /// @notice The Sepolia end of Cr3dX. Moves tokens between two parties and leaves
@@ -34,7 +35,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 ///      contract on the token first. There is no `permit` path; a second
 ///      transaction is easier to explain and to reproduce than a signature
 ///      scheme.
-contract Cr3dXGateway {
+contract Cr3dXGateway is ICr3dXGatewayEvents {
     using SafeERC20 for IERC20;
 
     /// @notice The one asset this gateway moves. Fixed at deployment.
@@ -50,29 +51,13 @@ contract Cr3dXGateway {
     ///      carry this number".
     uint256 public nonce;
 
-    /// @notice Investor sent funding straight to the borrower.
-    /// @param dealId Identifier the credit layer will match this against.
-    /// @param investor The account that paid. Taken from `msg.sender`, and
-    ///        recorded in the event rather than left to be inferred from the
-    ///        transaction sender, because the transaction's `from` field is not
-    ///        covered by Ethereum's canonical roots and must never carry meaning.
-    /// @param borrower The account that received.
-    /// @param nonce Sequence number of this event within the gateway.
-    event FundingMade(
-        bytes32 indexed dealId,
-        address indexed investor,
-        address indexed borrower,
-        uint256 amount,
-        uint256 nonce
-    );
-
-    /// @notice Payer sent repayment straight to the investor.
-    /// @param payer The account that paid. Need not be the borrower: anyone may
-    ///        repay on their behalf, and the credit layer settles against the
-    ///        deal, not against who pushed the button.
-    event RepaymentMade(
-        bytes32 indexed dealId, address indexed payer, address indexed investor, uint256 amount, uint256 nonce
-    );
+    /// @dev `FundingMade` and `RepaymentMade` are declared in
+    ///      `ICr3dXGatewayEvents`, which the Creditcoin verifier also inherits so
+    ///      that both ends read the same signature. The investor and the payer are
+    ///      written into the event from `msg.sender` rather than left to be
+    ///      inferred from the transaction sender, because the transaction's `from`
+    ///      field is not covered by Ethereum's canonical roots and must never
+    ///      carry meaning in Cr3dX.
 
     /// @notice The token address given at deployment is not a contract.
     error TokenNotAContract();
