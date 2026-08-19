@@ -14,11 +14,11 @@ pnpm-debug.log*
 dist/
 *.tsbuildinfo
 
-# foundry, anchored to the repository root so they do not swallow scripts/lib
+# foundry, anchored to the repository root so they do not swallow scripts/lib.
+# lib/ is intentionally not ignored: forge dependencies are tracked as submodules.
 /out/
 /cache/
 /broadcast/
-/lib/
 
 # editors / os
 .DS_Store

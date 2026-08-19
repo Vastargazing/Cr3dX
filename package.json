@@ -9,7 +9,10 @@
   },
   "scripts": {
     "probe": "tsx scripts/probe.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "capture:fixtures": "tsx scripts/capture-fixtures.ts",
+    "build": "forge build",
+    "test": "forge test"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",

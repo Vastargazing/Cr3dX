@@ -1,0 +1,72 @@
+[
+  {
+    "name": "eip1559-two-logs",
+    "why": "the exact shape of a Cr3dX gate call: an ERC-20 transfer plus one application event",
+    "txHash": "0x84435f8ea0ca2307be17207f762c085c278ad0261058efcd90da2340725450a9",
+    "height": 11520066,
+    "txType": 2,
+    "status": 1,
+    "logs": 2,
+    "encodedTxBytes": 2048
+  },
+  {
+    "name": "eip1559-no-logs",
+    "why": "a proven transaction that emits nothing, so the log array decodes empty rather than reverting",
+    "txHash": "0xb78453f2b4ad1afacefb977f9c97d90d64a5b1edfa2fc8aa943a430e11bf1b87",
+    "height": 11520066,
+    "txType": 2,
+    "status": 1,
+    "logs": 0,
+    "encodedTxBytes": 1248
+  },
+  {
+    "name": "reverted",
+    "why": "a perfectly valid proof of a failed transaction; the precompile does not check status, we must",
+    "txHash": "0x811a2a039e3ffec538ad9755c2eb7999a0b1b53f32212ff5f89d6ee7141e1382",
+    "height": 11520066,
+    "txType": 0,
+    "status": 0,
+    "logs": 0,
+    "encodedTxBytes": 1376
+  },
+  {
+    "name": "legacy",
+    "why": "transaction type 0 has a different chunk layout, and the decoder must not care",
+    "txHash": "0x0202f0dac3b16a75cf8113079c0fec901a15401781f26c13d5d90f26fa07d54e",
+    "height": 11520065,
+    "txType": 0,
+    "status": 1,
+    "logs": 17,
+    "encodedTxBytes": 6848
+  },
+  {
+    "name": "access-list",
+    "why": "transaction type 1, another chunk layout",
+    "txHash": "0x34c47dab3104a90be05ec0542dfddb22e363df693dad2ce9c99d26b5a4ca1b1f",
+    "height": 11520058,
+    "txType": 1,
+    "status": 1,
+    "logs": 1,
+    "encodedTxBytes": 1632
+  },
+  {
+    "name": "blob-carrying",
+    "why": "transaction type 3 splits the type-specific fields across two chunks, the strongest test of the claim",
+    "txHash": "0xe0559d49e87620edacf037044300b8138b457e2b9c4ab30791fd734757fdfd75",
+    "height": 11520066,
+    "txType": 3,
+    "status": 1,
+    "logs": 3,
+    "encodedTxBytes": 3936
+  },
+  {
+    "name": "many-logs",
+    "why": "upper end of the cost curve, and a log array long enough to catch offset mistakes",
+    "txHash": "0xa41787822c7bf56ee749e715945ae36f917406dcab581bd0ef793d0029fa90f4",
+    "height": 11520060,
+    "txType": 2,
+    "status": 1,
+    "logs": 43,
+    "encodedTxBytes": 17376
+  }
+]
