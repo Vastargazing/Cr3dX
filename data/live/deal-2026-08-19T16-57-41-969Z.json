@@ -1,0 +1,71 @@
+{
+  "capturedAt": "2026-08-19T16:57:41.969Z",
+  "chainKey": 1,
+  "gateway": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
+  "deals": "0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c",
+  "credit": "0x8234C87eCE3a88a7A9E2f987Ec44acc9f801529d",
+  "borrower": "0x73eEb564d3DebFdc2baf3281f9645C0068E862DF",
+  "investor": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6",
+  "dealId": "0xecde8d9fe68c750ccad1512748369030a13c5fe7ce46aead8b9a481a9bb3ceac",
+  "dueBlock": "11522787",
+  "requiredFunding": "1000000",
+  "faceValue": "1100000",
+  "fundTx": "0xf84dc761f29ae2a86dcb0b19af457ccd0703d5bc1530e8896b4e87f7948b1341",
+  "impostorTx": "0xb0a412759770e27a0d1236650a51cd70bf23ed83b9e5de13607a67dddce336d2",
+  "repayTx": "0x7c749e61ee14d8f44534adf8930df60b29deb7212b48f24effa5e5b5e824cd04",
+  "finalStatus": "PAID_ON_TIME",
+  "outcome": "PAID_ON_TIME",
+  "closedAtSourceHeight": 11522450,
+  "scoreBefore": 500,
+  "scoreAfter": 525,
+  "limitBefore": "5000000000",
+  "limitAfter": "5250000000",
+  "gas": [
+    {
+      "step": "createDeal",
+      "chain": "creditcoin",
+      "tx": "0xea5093f15bd74a53c8a8a2a7cc8521dfc8b0d72f395acda0ebd6851e4db93997",
+      "gasUsed": "259548"
+    },
+    {
+      "step": "fund",
+      "chain": "sepolia",
+      "tx": "0xf84dc761f29ae2a86dcb0b19af457ccd0703d5bc1530e8896b4e87f7948b1341",
+      "gasUsed": "59292"
+    },
+    {
+      "step": "fund (impostor)",
+      "chain": "sepolia",
+      "tx": "0xb0a412759770e27a0d1236650a51cd70bf23ed83b9e5de13607a67dddce336d2",
+      "gasUsed": "51668"
+    },
+    {
+      "step": "submitAndApply (funding)",
+      "chain": "creditcoin",
+      "tx": "0x4ee0f3bdc3390e4e2157d8299298a6c62326998d22237fa4dfb7758a5a6ef8f4",
+      "gasUsed": "334222",
+      "continuityRoots": 10
+    },
+    {
+      "step": "submitAndApply (impostor funding)",
+      "chain": "creditcoin",
+      "tx": "0x55d99421f68e87aa98b16d9bf9e3390faf14458f6e865641e2223ad8f9300b1b",
+      "gasUsed": "253960",
+      "continuityRoots": 7
+    },
+    {
+      "step": "repay",
+      "chain": "sepolia",
+      "tx": "0x7c749e61ee14d8f44534adf8930df60b29deb7212b48f24effa5e5b5e824cd04",
+      "gasUsed": "59260"
+    },
+    {
+      "step": "submitAndApply (repayment)",
+      "chain": "creditcoin",
+      "tx": "0xf3f2b7888edb20aae035492b03931a299c7d5077a13f9e443d10e8be715be245",
+      "gasUsed": "340088",
+      "continuityRoots": 9
+    }
+  ],
+  "problems": []
+}

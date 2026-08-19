@@ -17,11 +17,20 @@
       "reason": "the first deployment landed on the same address as the Sepolia gateway, because the deployer used nonce 0 on both chains; identical addresses make a misconfigured deployment visually indistinguishable from a correct one"
     }
   ],
-  "previousDeals": [],
-  "deals": "0x52B54F4aC836C5b32fFec72a2f03f1C22174B756",
-  "credit": "0x240B41fFE4F5A1D6047c9024873D636D70a99780",
-  "dealsDeploymentTx": "0xec79896bea7f99d35cb39bb889f70e5754ec0a4ba53407abfb1eb029213a8302",
-  "dealsDeploymentBlock": 5337092,
+  "previousDeals": [
+    {
+      "deals": "0x52B54F4aC836C5b32fFec72a2f03f1C22174B756",
+      "credit": "0x240B41fFE4F5A1D6047c9024873D636D70a99780",
+      "dealsDeploymentTx": "0xec79896bea7f99d35cb39bb889f70e5754ec0a4ba53407abfb1eb029213a8302",
+      "dealsDeploymentBlock": 5337092,
+      "supersededAt": "2026-08-19T16:36:27.401Z",
+      "reason": "v0.4.4 changed applied behaviour: funding from the designated investor is no longer refused after the threshold, and a repayment recipient is checked against designatedInvestor from creation. The deployed registry enforces the superseded rules."
+    }
+  ],
+  "deals": "0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c",
+  "credit": "0x8234C87eCE3a88a7A9E2f987Ec44acc9f801529d",
+  "dealsDeploymentTx": "0x3f39822da9f21bf79e6215eb4b6312101d8abae0e5e54e6aea91ceb579f6b2c3",
+  "dealsDeploymentBlock": 5337276,
   "baseLimit": "5000000000",
   "attestationGracePeriod": 600
 }

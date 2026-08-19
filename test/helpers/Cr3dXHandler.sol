@@ -128,8 +128,10 @@ contract Cr3dXHandler is Test {
             GateLog.only(GateLog.funding(gateway, dealId, payer, recipient, amount, _nonce++)), height
         );
 
-        bool applicable = recipient == deal.borrower && payer == deal.designatedInvestor
-            && deal.fundedAmount < deal.requiredFunding;
+        // Applicable means only that both immutable fields match. Whether the
+        // threshold has already been crossed is deliberately not part of it:
+        // funding from the designated investor is applied either way.
+        bool applicable = recipient == deal.borrower && payer == deal.designatedInvestor;
 
         (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.applyEvidence(evidenceId);
 
@@ -146,11 +148,10 @@ contract Cr3dXHandler is Test {
         Cr3dXDeals.Deal memory deal = deals.getDeal(dealId);
 
         address payer = borrowers[payerSeed % 3];
-        // Before funding fixes the investor there is nobody to pay but the
-        // designated one, which is what a real payer would do, and what leaves
-        // the evidence waiting rather than refused.
-        address expected = deal.investor == address(0) ? deal.designatedInvestor : deal.investor;
-        address recipient = payerSeed % 7 == 0 ? investors[payerSeed % 3] : expected;
+        // The address the deal's terms name, known from creation and equal to
+        // the recorded investor once the deal is financed. Occasionally somebody
+        // else, so the permanent refusal gets exercised too.
+        address recipient = payerSeed % 7 == 0 ? investors[payerSeed % 3] : deal.designatedInvestor;
         uint256 amount = bound(amountSeed, 1, 3_000_000_000);
         uint64 height = uint64(bound(heightSeed, START_HEIGHT - 10_000, START_HEIGHT + 30_000));
 
