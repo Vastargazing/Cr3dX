@@ -8,15 +8,20 @@
     "node": ">=20"
   },
   "scripts": {
-    "probe": "tsx scripts/probe.ts",
+    "wallets:create": "node --import tsx scripts/create-wallets.ts",
+    "preflight": "node --import tsx scripts/preflight.ts",
+    "probe": "node --import tsx scripts/probe.ts",
     "typecheck": "tsc --noEmit",
-    "capture:fixtures": "tsx scripts/capture-fixtures.ts",
+    "capture:fixtures": "node --import tsx scripts/capture-fixtures.ts",
     "build": "forge build",
     "test": "forge test",
-    "deploy:gateway": "tsx scripts/deploy-gateway.ts",
-    "capture:gate": "tsx scripts/capture-gate-fixtures.ts",
-    "deploy:verifier": "tsx scripts/deploy-verifier.ts",
-    "verify:live": "tsx scripts/verify-live.ts"
+    "deploy:sepolia": "node --import tsx scripts/deploy-gateway.ts",
+    "deploy:gateway": "npm run deploy:sepolia",
+    "capture:gate": "node --import tsx scripts/capture-gate-fixtures.ts",
+    "deploy:creditcoin": "node --import tsx scripts/deploy-verifier.ts",
+    "deploy:verifier": "npm run deploy:creditcoin",
+    "verify:live": "node --import tsx scripts/verify-live.ts",
+    "test:scripts": "node --import tsx --test scripts/lib/*.test.ts"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",

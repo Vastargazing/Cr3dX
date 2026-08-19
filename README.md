@@ -123,9 +123,10 @@ probe and the test suite, both of which are read-only and need no key.
 ## Building and testing
 
 ```sh
-npm run build      # forge build
-npm test           # forge test
-npm run typecheck  # tsc --noEmit over the TypeScript side
+npm run build         # forge build
+npm test              # forge test
+npm run test:scripts  # node --test over the tooling's own logic
+npm run typecheck     # tsc --noEmit over the TypeScript side
 ```
 
 The decoder tests run against transaction blobs captured from live Sepolia rather
@@ -143,18 +144,65 @@ written if the protocol's encoding and Ethereum's own receipt agree.
 
 Everything below runs against live testnets. Nothing here is mocked.
 
-**What you need first.** A Sepolia account with test ETH for gas, and test USDC
-from https://faucet.circle.com for the address printed above. Put that account's
-private key in `.env` as `DEPLOYER_PRIVATE_KEY`. The key is read from `.env` and
-nowhere else, is never printed, and `.env` is git-ignored.
+**What you need first.** Two disposable testnet-only EVM wallets. A is the
+deployer/investor; B is the borrower/payer. Generate them locally through
+Foundry. The command writes both private keys only to mode-`0600`, git-ignored
+`.env` and prints only their public addresses:
 
 ```sh
+npm run wallets:create
 npm run build
-npm run deploy:gateway    # checks the token, then deploys Cr3dXGateway
-npm run capture:gate      # approve, fund, repay, and prove all of it
-npm run deploy:verifier   # deploys Cr3dXVerifier to Creditcoin
+npm run preflight         # read-only RPC, config, deployment and balance gate
+npm run deploy:sepolia    # checks test USDC, then deploys Cr3dXGateway
+npm run capture:gate      # A funds, B repays, then fixtures are proven
+npm run deploy:creditcoin # deploys Cr3dXVerifier to Creditcoin
 npm run verify:live       # the whole path, end to end, nothing simulated
 ```
+
+**`preflight` sends nothing** and is safe to run at any point. It projects the
+whole USDC chain step by step from the balances actually on chain and prints
+where the run would stop:
+
+```
+step                                               A         B    helper
+start                                            1.0       0.1       0.0
+fund: A pays B                                   0.0       1.1       0.0
+repay: B pays A                                  1.1       0.0       0.0
+double funding: A supplies the helper            0.1       0.0       1.0
+double funding: helper pays B twice              0.1       1.0       0.0
+```
+
+Only 1.1 USDC of new money is ever needed for the whole run, because the money
+circulates: A pays B 1.0, B pays A back 1.1, and A reuses that to drive the
+double-funding fixture.
+
+That circulation is also why a half-finished run is dangerous to restart. It
+leaves the tokens sitting in B, which any "does each account hold enough" check
+reports as *A needs more USDC*, advice that spends a faucet cooldown while your
+own tokens sit one wallet away. Preflight recognises the exact state each stage
+leaves behind, says which one it matches, and tells you to move the tokens back
+instead. `capture:gate` runs the same check and refuses to send anything on
+balances that do not look like a clean start.
+
+
+The complete ordered run starts with these faucet targets:
+
+| Wallet | Sepolia ETH | Circle test USDC | Creditcoin test CTC |
+|---|---:|---:|---:|
+| A, deployer and investor | 0.02 | 1.0 | 0.1 |
+| B, borrower and payer | 0.005 | 0.1 | none |
+
+The USDC minimums use the actual order of the demo: A funds B with 1.0 USDC,
+B adds its initial 0.1 and repays 1.1 USDC to A, then A uses the returned funds
+for the 0.4 + 0.6 USDC double-funding fixture. ETH and CTC values are deliberate
+gas safety budgets. `preflight` prints only the remaining deficits if either
+address is already partly funded and never sends a transaction.
+
+That reuse is enforced, not assumed: `preflight` executes the balance arithmetic,
+while `capture:gate` waits for the successful fund receipt and checks B has at
+least 1.1 USDC before repayment, then waits for the repayment receipt and checks
+A has at least 1.0 USDC before approving and calling the helper. Confirmed
+allowances are read back from the token before the next transaction is sent.
 
 `npm run verify:live` is the claim the project stands on, executed rather than
 asserted: a real Sepolia transaction, a freshly built Attestcoin proof, on-chain

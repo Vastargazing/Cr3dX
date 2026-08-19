@@ -1,7 +1,7 @@
 /**
  * Deploys Cr3dXVerifier to Creditcoin3 Testnet.
  *
- *   npm run deploy:verifier
+ *   npm run deploy:creditcoin
  *
  * Takes the source chain key from the live ChainInfo registry rather than a
  * constant, and the gateway address from deployments/sepolia.json. Both are
