@@ -4,8 +4,17 @@
   "chainKey": 1,
   "sourceChainId": 11155111,
   "sourceGateway": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
-  "verifier": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
-  "verifierDeploymentTx": "0x4a3a4469fec70131b37bb0e53c27b0818647c0c10436752bbf15568942876643",
-  "verifierDeploymentBlock": 5336695,
-  "deployedBy": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6"
+  "verifier": "0xAf07fCFe36079bD37E94f40f928EE8b088f56B47",
+  "verifierDeploymentTx": "0x921bfdf94b3152b1a23ccf7f61fd7c6607ea0986484ea282015585a551eeb1fe",
+  "verifierDeploymentBlock": 5336861,
+  "deployedBy": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6",
+  "previousVerifiers": [
+    {
+      "verifier": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
+      "verifierDeploymentTx": "0x4a3a4469fec70131b37bb0e53c27b0818647c0c10436752bbf15568942876643",
+      "verifierDeploymentBlock": 5336695,
+      "supersededAt": "2026-08-19T14:52:09.511Z",
+      "reason": "the first deployment landed on the same address as the Sepolia gateway, because the deployer used nonce 0 on both chains; identical addresses make a misconfigured deployment visually indistinguishable from a correct one"
+    }
+  ]
 }
