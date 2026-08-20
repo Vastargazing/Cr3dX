@@ -346,7 +346,10 @@ event in the same transaction ignored. It fetches proofs fresh every run and
 never replays stored continuity proofs. Roughly twenty minutes is a practical
 freshness target for keeping proofs short, not an expiry deadline for the fact:
 within the observed window, older facts re-anchor to checkpoints with a newly
-built proof. Indefinite checkpoint retention is not established. See
+built proof. Creditcoin Team says checkpoints stay forever under the current
+runtime storage policy and archive nodes retain the cryptographic evidence needed
+for a future fresh proof; these are operational policies, not immutable protocol
+guarantees. See
 [docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
 
 `npm run s5:continue` is the same claim carried through to a credit outcome. B

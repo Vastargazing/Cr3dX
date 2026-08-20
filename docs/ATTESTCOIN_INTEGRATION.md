@@ -203,14 +203,48 @@ A batch of 11 is rejected, which confirms the `MaxBatchSize = 10` bound from the
 
 Both calls were made on identical inputs (sample `minimal`, 1,248 byte blob).
 
-**The difference is exactly zero, which confirms finding F-1.** `verifyAndEmit` additionally runs
-`calculate_tx_index_impl` and emits a `LOG3`, but charges for neither: `LogExt::record` stores the log
+**The difference is exactly zero on the current Creditcoin3 Testnet.** It confirms
+the measured behavior at this network revision, not a stable pricing rule.
+`verifyAndEmit` additionally runs `calculate_tx_index_impl` and emits a `LOG3`, but
+the inspected precompile path charges for neither: `LogExt::record` stores the log
 without touching the gasometer, and the precompile never calls `compute_cost()` or
-`record_log_costs_manual`, which its sibling precompiles do. Under the standard formula the
-uncharged amount is `375 + 3*375 + 32*8 = 1,756` gas per event, up to 17,560 for a full batch of ten.
+`record_log_costs_manual`, which its sibling precompiles do. Under the standard
+formula our estimate of the missing charge is `375 + 3*375 + 32*8 = 1,756` gas per
+event, up to 17,560 for a full batch of ten.
 
-This is reported upstream rather than exploited. Cr3dX budgets gas as if the event were charged, so
-that closing the gap upstream cannot break our limits.
+The Creditcoin Team's answer is preliminary: the engineer thinks the log should be
+charged and warned that gas recording may rise by about a `LOG3` cost. Final
+confirmation is still pending. Cr3dX uses `verify`, so its contract logic is
+unaffected; the budgeting risk is for integrators that choose `verifyAndEmit`.
+
+**Provenance.** Asked by Valery Borovsky in Discord channel `#buidl-ctc-qna` on
+2026-08-20 at 8:00 AM:
+
+```text
+one side note from our Creditcoin3 Testnet gas runs: `verify` and
+`verifyAndEmit` show zero gas difference on identical inputs
+
+looking at the precompile, `verifyAndEmit`'s `LOG3` isn't calling
+`record_log_costs_manual` (while `attestor-stash` and `substrate transfer`
+both charge for logs)
+
+that event should typically cost ~1756 gas
+
+is this intended behavior right now, or should devs budget for
+`verifyAndEmit` getting more expensive down the line?
+```
+
+Full answer from `dL^ | Creditcoin`, Creditcoin Team, same channel and date,
+8:05 AM:
+
+```text
+i'll need to get back to you on this one, but technically I think it should be
+charged, so you can assume its possible that the gas recording may raise of
+the size of a log3 cost.
+```
+
+This remains an open upstream pricing question. It is reported rather than
+exploited, and budgets must tolerate the additional charge.
 
 ### 8. Decoding the proven transaction inside a contract
 
@@ -432,10 +466,10 @@ transaction returns:
 A continuity proof chains from its lower endpoint through one root per source
 block until it reaches something the chain still holds: an attestation or a
 checkpoint. Attestations are retained for a bounded window and then pruned;
-checkpoints survive longer, and there is one per ten attestations, which at an
-attestation interval of ten source blocks means one per hundred blocks. How long
-checkpoints themselves are kept is not established — see *Retention and cadence,
-answered by the protocol team* below.
+checkpoints survive, and there is one per ten attestations, which at an
+attestation interval of ten source blocks means one per hundred blocks. The
+Creditcoin Team now says checkpoints stay forever under the current storage policy;
+see *The provability horizon, answered by the protocol team* below.
 
 So a fresh proof anchors to a nearby attestation and is short. Once that
 attestation is pruned, the same fact is provable only by chaining out to the next
@@ -461,12 +495,12 @@ root. Modest, and it stops growing once the proof is anchored to the checkpoint
 grid rather than to a pruned attestation. Proving promptly is still cheaper than
 proving late.
 
-**Waiting costs gas; how far that holds is not known.** Across everything observed
-so far the retention window is a cost question, not a correctness one, and the deals
-contract settles a fact against its source block height no matter when the proof
-arrives. The longest gap actually exercised is about an hour. Whether a fact proven a
-week late is still provable at all depends on how long checkpoints are kept, which the
-protocol team has not stated; see *The provability horizon is still open* below.
+**Waiting costs gas; continued provability is externally confirmed.** Our own
+measurement exercised only about an hour. Separately, the Creditcoin Team says
+checkpoints stay forever and cryptographic evidence remains in an archive node, so a
+fresh proof can be generated later. Those are respectively a current runtime-storage
+policy and an operator-infrastructure statement, not immutable protocol guarantees;
+see *The provability horizon, answered by the protocol team* below.
 
 ---
 
@@ -621,11 +655,11 @@ proof carries at most one attestation interval of roots, eleven at worst. Outsid
 it, the anchor is the checkpoint grid and the proof carries up to a hundred and
 one. The measured price of missing the window is about 34,000 gas per submission.
 
-**Missing it is a bill, as far as anything observed goes.** The deals contract
+**Missing it is a bill in our measurement.** The deals contract
 settles by source block height regardless of when the proof arrives, and past the
 window the fact was still provable through the checkpoint grid an hour later. That
-is the extent of what has been tested. It is not a demonstration that the fact stays
-provable indefinitely, and the checkpoint retention question is still open below.
+is the extent of our own test. Continued provability beyond it is sourced to the
+Creditcoin Team's separate answer below, not inferred from this run.
 
 **The worker gets a concrete target.** Submit within roughly twenty minutes of a
 height becoming attested and proofs stay short. That is comfortable: the builder
@@ -748,34 +782,66 @@ This is the mechanism that *Proofs expire, facts do not* inferred from the faili
 fixtures, now confirmed by the people who built it. It is why re-requesting the proof
 before every submission is a rule for the worker rather than an optimisation.
 
-### The provability horizon is still open
+### The provability horizon, answered by the protocol team
 
-The team explained the transition from attestation anchors to checkpoint anchors. They
-did not say that checkpoints are retained without limit, and nothing in the answer
-rules out a checkpoint retention bound of its own.
+The follow-up was explicitly about whether a fresh proof can be built in the future
+for an old transaction. It was not about whether a completed on-chain verification
+still needs an archive node.
 
-- **Established:** inside the retained-attestation window a proof is short; outside it
-  the anchor is the checkpoint grid and the proof is longer, by a measured 34,000 gas
-  on our transaction shapes.
-- **Not established:** that an arbitrarily old transaction stays provable. The longest
-  gap actually exercised here is about an hour.
+**Provenance.** Asked by Valery Borovsky in Discord channel `#buidl-ctc-qna` on
+2026-08-20 at 7:57 AM:
 
-A follow-up asking exactly this has been sent; there is no answer yet. Until there is,
-nothing in this document should claim that arbitrarily old facts remain provable
-forever, and statements about late proofs stay inside what has been observed.
+```text
+quick last question for our docs: are checkpoints kept forever, or is there pruning / a horizon limit for them too?
+basically, can we still generate a fresh proof for an ancient tx down the road?
 
-The stake is worth naming, because it changes category. If checkpoints are kept
-without limit, submission timing is purely a cost question, as recorded above. If
-checkpoints are bounded too, then evidence has a real deadline after which a fact
-cannot be proven at all. That is a correctness question, and it stays open until the
-team answers.
+we don't want to claim old txs stay provable forever if that's not actually guaranteed 🙏
+```
 
-**The exposure there is our retry strategy, not the protocol.** A worker retrying with
-exponential backoff has no natural stopping point, and a bounded attempt count is not
-a bounded wait: each attempt costs longer than the last, so ten attempts can span a
-day. A task left to retry patiently would cross any such deadline in silence and turn
-a recoverable failure into a fact that can no longer be proven at all — self-inflicted,
-and indistinguishable from a protocol fault when it surfaced. So the retry ceiling is
-set on elapsed time as well as attempt count, the backoff is clamped, and hitting the
-ceiling hands the task to manual submission with an explicit message. That holds
-whether or not checkpoints turn out to be bounded; it costs nothing if they are not.
+Full answer from `dL^ | Creditcoin`, Creditcoin Team, same channel and date,
+8:01 AM:
+
+```text
+checkpoints stay forever, a transaction that was proven with an attestation
+is fine too, because the cryptographic evidence stays for ever in the archive
+node as well.
+
+I don't know for sure what you mean by caching proofs, if you cache them
+off-chain yeah. [edited]
+```
+
+The `[edited]` marker is UI metadata retained from the supplied screenshot; the
+plain-text Discord paste preserves the message text and paragraph boundary but omits
+that badge.
+
+The answer establishes two separate external facts with different authority
+boundaries.
+
+1. **Checkpoints stay forever.** In the context of the question, this confirms that
+   a future fresh proof for an old transaction can anchor to a checkpoint. This is
+   the current runtime storage policy, not an immutable protocol invariant; it may
+   change without notice.
+2. **A transaction previously proven through an attestation remains provable in the
+   future.** The archive node retains the cryptographic evidence needed to build a
+   new proof, while the checkpoint is the available anchor. This is an infrastructure
+   statement: archive-node retention depends on operator policy, is not exposed by
+   the configuration pallet, and is not a protocol guarantee.
+
+This is a team confirmation, not our measurement. Our independent observation covers
+only about an hour. The two claims must not be collapsed: the first describes current
+checkpoint storage, while the second depends on archive-node operation.
+
+The caching sentence is intentionally preserved in full and does **not** authorize
+reusing a continuity proof. The engineer explicitly said they were unsure what
+"caching proofs" meant. A proof tied to a pruned ordinary attestation remains invalid;
+the durable worker state is the source transaction and event identity, and every
+submission and retry requests a fresh proof. Any normative interpretation of
+off-chain caching needs a separate follow-up.
+
+**The retry ceiling remains, for operational hygiene.** A bounded attempt count is
+not a bounded wait under exponential backoff, and an indefinitely hidden task is a
+defect even when the underlying fact remains provable. The backoff is clamped and the
+ceiling applies to elapsed time as well as attempt count. Hitting it stops automatic
+retries only: the task and metadata remain, Evidence state on chain does not change,
+no terminal rejection is created, and the UI allows manual submission or explicit
+resumption.
