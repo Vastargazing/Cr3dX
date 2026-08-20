@@ -195,23 +195,34 @@ written if the protocol's encoding and Ethereum's own receipt agree.
 Everything below runs against live testnets. Nothing here is mocked.
 
 **What you need first.** Two disposable testnet-only EVM wallets. A is the
-deployer/investor; B is the borrower/payer. Generate them locally through
-Foundry. On a filesystem that supports Unix permissions, the command verifies
-mode `0600` before storing either private key in the git-ignored `.env`; otherwise
-it refuses and prints no secret. Only the public addresses are printed:
+deployer/investor; B is the borrower/payer. Keep the secret file outside the
+checkout and expose it through the git-ignored `.env` symlink. This is the
+recommended layout even when the checkout's filesystem supports Unix modes: the
+repository can move or be deleted without moving the keys with it.
+
+For a new checkout on Linux, create the private target before generating wallets:
 
 ```sh
 env -u NODE_TLS_REJECT_UNAUTHORIZED npm ci
+mkdir -p ~/.config/cr3dx
+chmod 700 ~/.config/cr3dx
+touch ~/.config/cr3dx/.env
+chmod 600 ~/.config/cr3dx/.env
+ln -s ~/.config/cr3dx/.env .env
 npm run wallets:create
 npm run build
 # Fund the two printed public addresses, then run the complete acceptance:
 env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:fresh
 ```
 
-`wallets:create` puts both generated private keys into the ignored `.env` as
-`DEPLOYER_PRIVATE_KEY` and `BORROWER_PRIVATE_KEY`. On a moved checkout, restore
-those two test-only keys there before running anything live. Fund the public
-addresses that the command prints:
+`wallets:create` follows the symlink, verifies that its target is mode `0600`,
+and puts both generated private keys there as `DEPLOYER_PRIVATE_KEY` and
+`BORROWER_PRIVATE_KEY`. If the target filesystem cannot enforce private Unix
+permissions, it refuses before generating a key. It prints only the public
+addresses. For an existing pair, populate the protected target yourself or
+export the two variables in the shell; no project-local regular `.env` is needed.
+
+Fund the public addresses that the command prints:
 
 - Sepolia ETH: choose a currently listed faucet from
   [ethereum.org's Sepolia network page](https://ethereum.org/en/developers/docs/networks/#sepolia);
