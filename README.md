@@ -80,8 +80,8 @@ anchor is the address.
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
 | `Cr3dXVerifier` | Creditcoin3 Testnet | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
-| `Cr3dXDeals` | Creditcoin3 Testnet | `0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c` |
-| `Cr3dXCredit` | Creditcoin3 Testnet | `0x8234C87eCE3a88a7A9E2f987Ec44acc9f801529d` |
+| `Cr3dXDeals` | Creditcoin3 Testnet | `0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485` |
+| `Cr3dXCredit` | Creditcoin3 Testnet | `0x13AEC440a6cA605974Af15a9ef5B77EBC1442480` |
 | `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
 
 An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
@@ -151,8 +151,10 @@ Requires Node.js 20 or newer and Foundry.
 ```sh
 git clone --recurse-submodules https://github.com/Vastargazing/Cr3dX.git
 cd Cr3dX
-npm install
-curl -L https://foundry.paradigm.xyz | bash && foundryup
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm ci
+curl -L https://foundry.paradigm.xyz | bash
+~/.foundry/bin/foundryup
+export PATH="$HOME/.foundry/bin:$PATH"
 cp .env.example .env
 ```
 
@@ -162,6 +164,11 @@ fetches the Solidity dependencies.
 `.env` is git-ignored and is the only place credentials are ever read from. The
 defaults in `.env.example` point at public endpoints and are enough to run the
 probe and the test suite, both of which are read-only and need no key.
+
+If your parent shell exports `NODE_TLS_REJECT_UNAUTHORIZED=0`, remove it. Every
+network script refuses to run while global certificate verification is disabled.
+For a shell you do not control, prefix the command with
+`env -u NODE_TLS_REJECT_UNAUTHORIZED`, as in the live commands below.
 
 ## Building and testing
 
@@ -183,26 +190,103 @@ The capture reads expected values from `eth_getTransactionReceipt` and cross-che
 them against the attested blob before writing anything, so a fixture can only be
 written if the protocol's encoding and Ethereum's own receipt agree.
 
-## Reproducing the Sepolia side
+## Reproducing the live S5 scenario
 
 Everything below runs against live testnets. Nothing here is mocked.
 
 **What you need first.** Two disposable testnet-only EVM wallets. A is the
-deployer/investor; B is the borrower/payer. Generate them locally through
-Foundry. The command writes both private keys only to mode-`0600`, git-ignored
-`.env` and prints only their public addresses:
+deployer/investor; B is the borrower/payer. Keep the secret file outside the
+checkout and expose it through the git-ignored `.env` symlink. This is the
+recommended layout even when the checkout's filesystem supports Unix modes: the
+repository can move or be deleted without moving the keys with it.
+
+For a new checkout on Linux, create the private target before generating wallets:
 
 ```sh
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm ci
+mkdir -p ~/.config/cr3dx
+chmod 700 ~/.config/cr3dx
+touch ~/.config/cr3dx/.env
+chmod 600 ~/.config/cr3dx/.env
+ln -s ~/.config/cr3dx/.env .env
 npm run wallets:create
 npm run build
-npm run preflight         # read-only RPC, config, deployment and balance gate
-npm run deploy:sepolia    # checks test USDC, then deploys Cr3dXGateway
-npm run capture:gate      # A funds, B repays, then fixtures are proven
-npm run deploy:creditcoin # deploys Cr3dXVerifier to Creditcoin
-npm run verify:live       # proofs land as facts, end to end, nothing simulated
-npm run deploy:deals      # deploys Cr3dXDeals, and Cr3dXCredit with it
-npm run deal:live         # the whole credit path on live testnets
+# Fund the two printed public addresses, then run the complete acceptance:
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:fresh
 ```
+
+`wallets:create` follows the symlink, verifies that its target is mode `0600`,
+and puts both generated private keys there as `DEPLOYER_PRIVATE_KEY` and
+`BORROWER_PRIVATE_KEY`. If the target filesystem cannot enforce private Unix
+permissions, it refuses before generating a key. It prints only the public
+addresses. For an existing pair, populate the protected target yourself or
+export the two variables in the shell; no project-local regular `.env` is needed.
+
+Fund the public addresses that the command prints:
+
+- Sepolia ETH: choose a currently listed faucet from
+  [ethereum.org's Sepolia network page](https://ethereum.org/en/developers/docs/networks/#sepolia);
+- Circle test USDC: [faucet.circle.com](https://faucet.circle.com), selecting
+  Ethereum Sepolia and token address
+  `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`;
+- Creditcoin test CTC: use the EVM-address flow in the
+  [official Creditcoin faucet guide](https://docs.creditcoin.org/wallets/using-testnet-faucet).
+
+The unchanged live anchors are explicit, because a symbol or a deployment-file
+name is not an identifier:
+
+| Object | Address |
+|---|---|
+| Sepolia USDC | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` |
+| `Cr3dXGateway` | `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` |
+| `Cr3dXVerifier` | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
+| current `Cr3dXDeals` | `0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485` |
+| current `Cr3dXCredit` | `0x13AEC440a6cA605974Af15a9ef5B77EBC1442480` |
+
+There are two deliberately different modes:
+
+```sh
+# Deploy a new Deals/Credit pair, assert score 500 and empty history/reserve/
+# exposure, then execute two consecutive complete runs without intervention.
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:fresh
+
+# Keep the recorded Deals/Credit state and execute one more accumulating run.
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:continue
+```
+
+Both are one-command paths. The script performs approvals when needed, creates
+the deal, sends real Sepolia funding A to B, waits with visible attestation
+progress, builds a fresh proof immediately before `submitAndApply`, observes
+`FINANCED`, repays B to A, waits and proves again, observes `PAID_ON_TIME`, then
+opens a second deal and deliberately leaves it in `CREATED`. It prints status,
+all deal sums, reserve, exposure, score, total limit and available limit after
+every step. It also writes the complete console transcript and a machine-readable
+JSON report to `data/live/s5-<mode>-<timestamp>.{log,json}`.
+
+Writes are signed locally and their transaction hashes are known before the RPC
+call. If `eth_sendRawTransaction` times out, the script checks that hash and may
+rebroadcast only the identical raw transaction. It never guesses by sending a new
+logical operation. If an older run stopped after a confirmed primary step, inspect
+the on-chain deal first and resume that explicit deal only:
+
+```sh
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:resume -- 0x<deal-id>
+```
+
+Preflight is part of the same command and sends nothing until every blocker has
+passed. For two runs B must already hold at least 0.2 USDC. It prints both finite
+run capacities from live state:
+
+```text
+balance runs = floor(B USDC balance / 0.1 USDC)
+reserve runs = floor(available credit limit / 1.1 USDC)
+```
+
+Every run permanently leaves one 1.1 USDC reserve, spends 0.1 USDC of B's own
+balance, and adds an on-time outcome until the score reaches its ceiling. This is
+expected state drift, not a cleanup bug. `fresh` is the only mode in which the
+first score transition is deterministically 500 to 525; `continue` reports and
+uses whatever history is already on chain.
 
 **`preflight` sends nothing** and is safe to run at any point. It projects the
 whole USDC chain step by step from the balances actually on chain and prints
@@ -230,26 +314,27 @@ instead. `capture:gate` runs the same check and refuses to send anything on
 balances that do not look like a clean start.
 
 
-The complete ordered run starts with these faucet targets:
+The two-run `s5:fresh` command starts with these conservative faucet targets:
 
 | Wallet | Sepolia ETH | Circle test USDC | Creditcoin test CTC |
 |---|---:|---:|---:|
-| A, deployer and investor | 0.02 | 1.0 | 0.01 |
-| B, borrower and payer | 0.005 | 0.1 | 0.005 |
+| A, deployer and investor | 0.02 | 1.0 | 0.02 |
+| B, borrower and payer | 0.005 | 0.2 | 0 (the script tops it up) |
 
 B's CTC is only needed for `createDeal`, since the borrower opens the deal.
-`deal:live` tops B up from A when it is short: A holds the CTC, and a transfer
+The live script tops B up from A when it is short: A holds the CTC, and a transfer
 between two wallets you already control is cheaper than a faucet round trip in
 the middle of a demo. `preflight` says which of the two will happen.
 
-The USDC minimums use the actual order of the demo: A funds B with 1.0 USDC,
-B adds its initial 0.1 and repays 1.1 USDC to A, then A uses the returned funds
-for the 0.4 + 0.6 USDC double-funding fixture. ETH and CTC values are deliberate
-gas safety budgets. `preflight` prints only the remaining deficits if either
-address is already partly funded and never sends a transaction.
+The S5 USDC minimums use the actual order of the demo: A funds B with 1.0 USDC,
+B adds 0.1 of its own balance and repays 1.1 USDC to A, so A can fund the next
+run with the returned funds. B therefore needs 0.2 USDC of its own for two runs.
+ETH and CTC values are deliberate gas safety budgets.
 
-That reuse is enforced, not assumed: `preflight` executes the balance arithmetic,
-while `capture:gate` waits for the successful fund receipt and checks B has at
+Separately, the older `preflight`/`capture:gate` fixture path reuses the returned
+funds for its 0.4 + 0.6 USDC double-funding fixture. That reuse is enforced, not
+assumed: `preflight` executes the balance arithmetic, while `capture:gate` waits
+for the successful fund receipt and checks B has at
 least 1.1 USDC before repayment, then waits for the repayment receipt and checks
 A has at least 1.0 USDC before approving and calling the helper. Confirmed
 allowances are read back from the token before the next transaction is sent.
@@ -258,19 +343,41 @@ allowances are read back from the token before the next transaction is sent.
 asserted: a real Sepolia transaction, a freshly built Attestcoin proof, on-chain
 verification, and one immutable fact per genuine gateway event, with a lookalike
 event in the same transaction ignored. It fetches proofs fresh every run and
-never replays the ones stored in the fixtures, because a continuity proof stops
-verifying once the attestation it anchors to has been pruned. See
+never replays stored continuity proofs. Roughly twenty minutes is a practical
+freshness target for keeping proofs short, not an expiry deadline for the fact:
+within the observed window, older facts re-anchor to checkpoints with a newly
+built proof. Creditcoin Team says checkpoints stay forever under the current
+runtime storage policy and archive nodes retain the cryptographic evidence needed
+for a future fresh proof; these are operational policies, not immutable protocol
+guarantees. See
 [docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
 
-`npm run deal:live` is the same claim carried through to a credit outcome. B
+`npm run s5:continue` is the same claim carried through to a credit outcome. B
 opens a deal, A funds it on Sepolia, B also sends a funding for the same deal
 which nothing entitles B to do, both are proven and applied in one Creditcoin
 transaction each, B repays, and the deal closes as `PAID_ON_TIME` with the score
 and the limit moving. The impostor funding lands in `REJECTED_PERMANENT` with
 `WRONG_INVESTOR`; it is a self-transfer, so it demonstrates the refusal without
-moving any money. Measured gas is written to `data/live/` with the run.
+moving any money. The scenario also leaves a second unfunded deal reserved.
+Measured gas, native test ETH/CTC spent, both attestation waits, per-run time and
+total wall time are written to `data/live/` with the run. No USD conversion is
+made.
 
-From the run of 2026-08-19, measured rather than estimated:
+The reference `s5:fresh` run of 2026-08-20 completed two consecutive runs in
+38m20s. Funding/repayment attestation waits were 7m01s/7m10s and 8m44s/9m16s.
+Score moved 500 → 525 → 550, final exposure was zero, and the two deliberately
+unfunded deals left 2.2 USDC reserved. Costs were measured, not estimated:
+
+| Chain | Gas | Native test token spent |
+|---|---:|---:|
+| Sepolia | 672,978 | 0.000708508217397735 ETH |
+| Creditcoin | 5,373,281 | 0.0026866405 CTC |
+
+The complete transcript and machine-readable report are
+`data/live/s5-fresh-2026-08-20T05-30-18-335Z.{log,json}`.
+
+For comparison, the earlier one-run path of 2026-08-19 measured these individual
+operations:
 
 | Operation | Chain | Gas | Continuity roots |
 |---|---|---:|---:|

@@ -57,7 +57,11 @@ contract MockChainInfo is IChainInfo {
         return 0;
     }
 
-    function get_latest_checkpoint_height_and_hash(uint64) external pure returns (HeightHashResult memory result) {
+    function get_latest_checkpoint_height_and_hash(uint64)
+        external
+        pure
+        returns (HeightHashResult memory result)
+    {
         return result;
     }
 
@@ -69,7 +73,11 @@ contract MockChainInfo is IChainInfo {
         return result;
     }
 
-    function get_attestation_height_for_digest(uint64, bytes32) external pure returns (HeightResult memory result) {
+    function get_attestation_height_for_digest(uint64, bytes32)
+        external
+        pure
+        returns (HeightResult memory result)
+    {
         return result;
     }
 

@@ -92,28 +92,24 @@ abstract contract Cr3dXHarness is Test {
     // ------------------------------------------------------------------
 
     /// @dev Records a proven funding without applying it.
-    function _recordFunding(
-        bytes32 dealId,
-        address investor,
-        address borrower,
-        uint256 amount,
-        uint64 height
-    ) internal returns (bytes32 evidenceId) {
-        ProvenLog[] memory logs =
-            GateLog.only(GateLog.funding(address(gateway), dealId, investor, borrower, amount, nextEventNonce++));
+    function _recordFunding(bytes32 dealId, address investor, address borrower, uint256 amount, uint64 height)
+        internal
+        returns (bytes32 evidenceId)
+    {
+        ProvenLog[] memory logs = GateLog.only(
+            GateLog.funding(address(gateway), dealId, investor, borrower, amount, nextEventNonce++)
+        );
         return _record(logs, height)[0];
     }
 
     /// @dev Records a proven repayment without applying it.
-    function _recordRepayment(
-        bytes32 dealId,
-        address payer,
-        address investor,
-        uint256 amount,
-        uint64 height
-    ) internal returns (bytes32 evidenceId) {
-        ProvenLog[] memory logs =
-            GateLog.only(GateLog.repayment(address(gateway), dealId, payer, investor, amount, nextEventNonce++));
+    function _recordRepayment(bytes32 dealId, address payer, address investor, uint256 amount, uint64 height)
+        internal
+        returns (bytes32 evidenceId)
+    {
+        ProvenLog[] memory logs = GateLog.only(
+            GateLog.repayment(address(gateway), dealId, payer, investor, amount, nextEventNonce++)
+        );
         return _record(logs, height)[0];
     }
 
@@ -130,8 +126,9 @@ abstract contract Cr3dXHarness is Test {
         internal
         returns (bytes32 evidenceId)
     {
-        ProvenLog[] memory logs =
-            GateLog.only(GateLog.funding(address(gateway), dealId, investor, borrower, amount, nextEventNonce++));
+        ProvenLog[] memory logs = GateLog.only(
+            GateLog.funding(address(gateway), dealId, investor, borrower, amount, nextEventNonce++)
+        );
         return _submitAndApply(logs, height)[0];
     }
 
@@ -139,8 +136,9 @@ abstract contract Cr3dXHarness is Test {
         internal
         returns (bytes32 evidenceId)
     {
-        ProvenLog[] memory logs =
-            GateLog.only(GateLog.repayment(address(gateway), dealId, payer, investor, amount, nextEventNonce++));
+        ProvenLog[] memory logs = GateLog.only(
+            GateLog.repayment(address(gateway), dealId, payer, investor, amount, nextEventNonce++)
+        );
         return _submitAndApply(logs, height)[0];
     }
 

@@ -148,7 +148,9 @@ contract Cr3dXCredit {
     /// @notice A deal was opened and its face value reserved against the limit.
     event DealOpened(bytes32 indexed dealId, address indexed borrower, uint256 faceValue, uint256 reserved);
     /// @notice A reserve became exposure, exactly once for this deal.
-    event ReserveConverted(bytes32 indexed dealId, address indexed borrower, uint256 amount, uint256 reserved, uint256 exposure);
+    event ReserveConverted(
+        bytes32 indexed dealId, address indexed borrower, uint256 amount, uint256 reserved, uint256 exposure
+    );
     /// @notice Proven repayment reduced the borrower's outstanding exposure.
     event ExposureReduced(bytes32 indexed dealId, address indexed borrower, uint256 amount, uint256 exposure);
     /// @notice The canonical outcome of a deal was written or refined.
@@ -376,8 +378,8 @@ contract Cr3dXCredit {
     /// @dev The score as a pure function of the three counters.
     function _score(Counters memory counters) private pure returns (uint16) {
         int256 raw = int256(uint256(BASE_SCORE)) + WEIGHT_PAID_ON_TIME * int256(uint256(counters.paidOnTime))
-            + WEIGHT_PAID_LATE * int256(uint256(counters.paidLate))
-            + WEIGHT_DEFAULTED * int256(uint256(counters.defaulted));
+            + WEIGHT_PAID_LATE * int256(uint256(counters.paidLate)) + WEIGHT_DEFAULTED
+            * int256(uint256(counters.defaulted));
 
         // One clamp, on the finished sum. See the contract note above for why
         // clamping earlier would make the result order dependent.

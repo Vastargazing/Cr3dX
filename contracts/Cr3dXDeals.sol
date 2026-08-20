@@ -207,7 +207,9 @@ contract Cr3dXDeals {
         uint96 dealSeq
     );
     /// @notice Proven funding was added to a deal.
-    event FundingApplied(bytes32 indexed dealId, bytes32 indexed evidenceId, uint256 amount, uint256 fundedAmount);
+    event FundingApplied(
+        bytes32 indexed dealId, bytes32 indexed evidenceId, uint256 amount, uint256 fundedAmount
+    );
     /// @notice Funding crossed `requiredFunding`; the investor is now fixed.
     event DealFinanced(bytes32 indexed dealId, address indexed investor, uint256 fundedAmount);
     /// @notice Proven repayment was added to a deal.
@@ -260,10 +262,12 @@ contract Cr3dXDeals {
     /// @param faceValue Amount owed back, in native token units.
     /// @param dueBlock Source chain height up to which repayment counts as on time.
     /// @return dealId Identifier to be quoted at the gateway when paying.
-    function createDeal(address designatedInvestor, uint256 requiredFunding, uint256 faceValue, uint64 dueBlock)
-        external
-        returns (bytes32 dealId)
-    {
+    function createDeal(
+        address designatedInvestor,
+        uint256 requiredFunding,
+        uint256 faceValue,
+        uint64 dueBlock
+    ) external returns (bytes32 dealId) {
         if (requiredFunding == 0 || requiredFunding > faceValue) {
             revert InvalidTerms(requiredFunding, faceValue);
         }
@@ -285,7 +289,9 @@ contract Cr3dXDeals {
         // Reserves the face value and enforces the limit. INV-10 lives there.
         credit.openDeal(dealId, msg.sender, faceValue);
 
-        emit DealCreated(dealId, msg.sender, designatedInvestor, requiredFunding, faceValue, dueBlock, dealSeq);
+        emit DealCreated(
+            dealId, msg.sender, designatedInvestor, requiredFunding, faceValue, dueBlock, dealSeq
+        );
     }
 
     /// @notice Declares a financed deal in default on the strength of the
@@ -331,6 +337,10 @@ contract Cr3dXDeals {
     ///      contract can apply them immediately without the verifier knowing
     ///      that a registry exists.
     ///
+    ///      Application is deliberately two-phase and stable within each phase:
+    ///      every funding in returned order, then every repayment in returned
+    ///      order. Funding can unlock repayment, never the reverse.
+    ///
     ///      Submitting straight to the verifier stays open to anyone, and
     ///      `applyEvidence` picks such facts up afterwards. Nothing here is a
     ///      privileged channel.
@@ -343,9 +353,7 @@ contract Cr3dXDeals {
         IBlockProver.ContinuityProof calldata continuityProof
     ) external returns (bytes32[] memory ids) {
         ids = verifier.submitEvidence(height, encodedTx, merkleProof, continuityProof);
-        for (uint256 i = 0; i < ids.length; i++) {
-            _apply(ids[i]);
-        }
+        _applySubmitted(ids);
     }
 
     /// @notice The same, for up to ten transactions under one continuity proof.
@@ -358,9 +366,7 @@ contract Cr3dXDeals {
         IBlockProver.ContinuityProof calldata sharedContinuityProof
     ) external returns (bytes32[] memory ids) {
         ids = verifier.submitEvidenceBatch(heights, encodedTxs, merkleProofs, sharedContinuityProof);
-        for (uint256 i = 0; i < ids.length; i++) {
-            _apply(ids[i]);
-        }
+        _applySubmitted(ids);
     }
 
     /// @notice Retries a verified fact that could not be applied when it arrived.
@@ -375,7 +381,10 @@ contract Cr3dXDeals {
     ///      The single reverting case is a fact the verifier never recorded.
     ///      Answering "pending" there would be a lie: an unverified identifier
     ///      is not waiting for anything, it does not exist.
-    function applyEvidence(bytes32 evidenceId) external returns (EvidenceState state, RejectionReason reason) {
+    function applyEvidence(bytes32 evidenceId)
+        external
+        returns (EvidenceState state, RejectionReason reason)
+    {
         state = _apply(evidenceId);
         reason = _applications[evidenceId].reason;
     }
@@ -465,8 +474,32 @@ contract Cr3dXDeals {
         if (application.state != EvidenceState.UNSEEN) return application.state;
 
         Cr3dXVerifier.VerifiedEvidence memory evidence = verifier.getEvidence(evidenceId);
-        if (!evidence.recorded) revert UnknownEvidence(evidenceId);
+        return _classify(evidenceId, evidence);
+    }
 
+    /// @dev Applies only the facts created by the current submission. There is
+    ///      no scan or retry of older pending evidence.
+    function _applySubmitted(bytes32[] memory ids) private {
+        _applySubmittedPhase(ids, Cr3dXVerifier.EvidenceKind.FUNDING);
+        _applySubmittedPhase(ids, Cr3dXVerifier.EvidenceKind.REPAYMENT);
+    }
+
+    /// @dev One stable linear pass for one evidence kind.
+    function _applySubmittedPhase(bytes32[] memory ids, Cr3dXVerifier.EvidenceKind kind) private {
+        for (uint256 i = 0; i < ids.length; i++) {
+            Cr3dXVerifier.VerifiedEvidence memory evidence = verifier.getEvidence(ids[i]);
+            if (evidence.kind == kind) _classify(ids[i], evidence);
+        }
+    }
+
+    /// @dev Classifies a fact already read from the verifier.
+    function _classify(bytes32 evidenceId, Cr3dXVerifier.VerifiedEvidence memory evidence)
+        private
+        returns (EvidenceState)
+    {
+        // `getEvidence` already establishes this. Retaining the local guard
+        // keeps the registry's named error explicit at its trust boundary.
+        if (!evidence.recorded) revert UnknownEvidence(evidenceId);
         if (evidence.kind == Cr3dXVerifier.EvidenceKind.FUNDING) {
             return _applyFunding(evidenceId, evidence);
         }
@@ -506,7 +539,9 @@ contract Cr3dXDeals {
 
         // Both checks are against fields fixed when the deal was created, so
         // neither can come true later.
-        if (evidence.recipient != deal.borrower) return _reject(evidenceId, dealId, RejectionReason.WRONG_RECIPIENT);
+        if (evidence.recipient != deal.borrower) {
+            return _reject(evidenceId, dealId, RejectionReason.WRONG_RECIPIENT);
+        }
         if (evidence.counterparty != deal.designatedInvestor) {
             return _reject(evidenceId, dealId, RejectionReason.WRONG_INVESTOR);
         }
@@ -627,12 +662,17 @@ contract Cr3dXDeals {
         if (derived == current) return;
 
         deal.status = derived;
-        credit.recordOutcome(dealId, derived == DealStatus.PAID_ON_TIME ? Result.PAID_ON_TIME : Result.PAID_LATE);
+        credit.recordOutcome(
+            dealId, derived == DealStatus.PAID_ON_TIME ? Result.PAID_ON_TIME : Result.PAID_LATE
+        );
         emit DealSettled(dealId, derived);
     }
 
     /// @dev Records a permanent refusal.
-    function _reject(bytes32 evidenceId, bytes32 dealId, RejectionReason reason) private returns (EvidenceState) {
+    function _reject(bytes32 evidenceId, bytes32 dealId, RejectionReason reason)
+        private
+        returns (EvidenceState)
+    {
         _applications[evidenceId] = Application(EvidenceState.REJECTED_PERMANENT, reason);
         emit EvidenceRejected(evidenceId, dealId, reason);
         return EvidenceState.REJECTED_PERMANENT;

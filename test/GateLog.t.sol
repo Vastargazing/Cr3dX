@@ -65,7 +65,8 @@ contract GateLogTest is Test {
         uint256 found;
         for (uint256 i = 0; i < recorded.length; i++) {
             if (recorded[i].emitter != address(gateway)) continue;
-            log = ProvenLog({emitter: recorded[i].emitter, topics: recorded[i].topics, data: recorded[i].data});
+            log =
+                ProvenLog({emitter: recorded[i].emitter, topics: recorded[i].topics, data: recorded[i].data});
             found++;
         }
         assertEq(found, 1, "expected exactly one gateway log");

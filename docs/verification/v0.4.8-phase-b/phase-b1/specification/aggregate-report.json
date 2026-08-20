@@ -1,0 +1,348 @@
+{
+  "schema": "cr3dx-phase-b-specification-prescribed-result-v1",
+  "status": "matched",
+  "success_label": "Phase B specification-prescribed: 47/47 matched",
+  "phase_b_success_label": "Phase B: 63/63 matched",
+  "matched_count": 47,
+  "expected_count": 47,
+  "independent_core": {
+    "status": "matched",
+    "matched_count": 16,
+    "expected_count": 16,
+    "label": "Phase B independent-core: 16/16 matched",
+    "aggregate_path": "phase-b-replay/results/independent/20260820T125256Z-616175/aggregate-report.json",
+    "aggregate_sha256": "8ab5f54b155dd8266f0024fca76ddaa683b0841d277210ed560b1f989101d252"
+  },
+  "remaining": [
+    {
+      "sealed_order": 12,
+      "contract": "Replay_012",
+      "trace_id": "two-phase-log-order-funding-first",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/012_Replay_012"
+    },
+    {
+      "sealed_order": 13,
+      "contract": "Replay_013",
+      "trace_id": "two-phase-log-order-repayment-first",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/013_Replay_013"
+    },
+    {
+      "sealed_order": 14,
+      "contract": "Replay_014",
+      "trace_id": "two-phase-stable-id-order-A-then-B",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/014_Replay_014"
+    },
+    {
+      "sealed_order": 15,
+      "contract": "Replay_015",
+      "trace_id": "two-phase-stable-id-order-B-then-A",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/015_Replay_015"
+    },
+    {
+      "sealed_order": 16,
+      "contract": "Replay_016",
+      "trace_id": "two-phase-transaction-order-funding-first",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/016_Replay_016"
+    },
+    {
+      "sealed_order": 17,
+      "contract": "Replay_017",
+      "trace_id": "two-phase-transaction-order-repayment-first",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/017_Replay_017"
+    },
+    {
+      "sealed_order": 18,
+      "contract": "Replay_018",
+      "trace_id": "classification-explicit-retry-retry-before-funding",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/018_Replay_018"
+    },
+    {
+      "sealed_order": 19,
+      "contract": "Replay_019",
+      "trace_id": "classification-explicit-retry-retry-immediately-after",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/019_Replay_019"
+    },
+    {
+      "sealed_order": 20,
+      "contract": "Replay_020",
+      "trace_id": "classification-explicit-retry-retry-much-later",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/020_Replay_020"
+    },
+    {
+      "sealed_order": 21,
+      "contract": "Replay_021",
+      "trace_id": "classification-funding-dual-mismatch-recipient-wins",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/021_Replay_021"
+    },
+    {
+      "sealed_order": 22,
+      "contract": "Replay_022",
+      "trace_id": "classification-funding-wrong-recipient",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/022_Replay_022"
+    },
+    {
+      "sealed_order": 23,
+      "contract": "Replay_023",
+      "trace_id": "classification-repayment-wrong-recipient-created",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/023_Replay_023"
+    },
+    {
+      "sealed_order": 24,
+      "contract": "Replay_024",
+      "trace_id": "classification-terminal-and-pending-idempotence",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/024_Replay_024"
+    },
+    {
+      "sealed_order": 25,
+      "contract": "Replay_025",
+      "trace_id": "classification-unknown-deal-create-retry",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/025_Replay_025"
+    },
+    {
+      "sealed_order": 26,
+      "contract": "Replay_026",
+      "trace_id": "accounting-default-memory-A-then-B",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/026_Replay_026"
+    },
+    {
+      "sealed_order": 27,
+      "contract": "Replay_027",
+      "trace_id": "accounting-default-memory-B-then-A",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/027_Replay_027"
+    },
+    {
+      "sealed_order": 28,
+      "contract": "Replay_028",
+      "trace_id": "accounting-exposure-above-limit-after-default",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/028_Replay_028"
+    },
+    {
+      "sealed_order": 32,
+      "contract": "Replay_032",
+      "trace_id": "accounting-funding-permutation-0-60-50-40",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/032_Replay_032"
+    },
+    {
+      "sealed_order": 33,
+      "contract": "Replay_033",
+      "trace_id": "accounting-funding-permutation-1-60-40-50",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/033_Replay_033"
+    },
+    {
+      "sealed_order": 34,
+      "contract": "Replay_034",
+      "trace_id": "accounting-funding-permutation-2-50-60-40",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/034_Replay_034"
+    },
+    {
+      "sealed_order": 35,
+      "contract": "Replay_035",
+      "trace_id": "accounting-funding-permutation-3-50-40-60",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/035_Replay_035"
+    },
+    {
+      "sealed_order": 36,
+      "contract": "Replay_036",
+      "trace_id": "accounting-funding-permutation-4-40-60-50",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/036_Replay_036"
+    },
+    {
+      "sealed_order": 37,
+      "contract": "Replay_037",
+      "trace_id": "accounting-funding-permutation-5-40-50-60",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/037_Replay_037"
+    },
+    {
+      "sealed_order": 38,
+      "contract": "Replay_038",
+      "trace_id": "accounting-hard-limit-reservations",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/038_Replay_038"
+    },
+    {
+      "sealed_order": 39,
+      "contract": "Replay_039",
+      "trace_id": "accounting-overpayment-one",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/039_Replay_039"
+    },
+    {
+      "sealed_order": 40,
+      "contract": "Replay_040",
+      "trace_id": "accounting-overpayment-split",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/040_Replay_040"
+    },
+    {
+      "sealed_order": 41,
+      "contract": "Replay_041",
+      "trace_id": "accounting-past-due-funding-strict-default",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/041_Replay_041"
+    },
+    {
+      "sealed_order": 42,
+      "contract": "Replay_042",
+      "trace_id": "accounting-repayment-full-order-late-then-timely",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/042_Replay_042"
+    },
+    {
+      "sealed_order": 43,
+      "contract": "Replay_043",
+      "trace_id": "accounting-repayment-full-order-timely-then-late",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/043_Replay_043"
+    },
+    {
+      "sealed_order": 44,
+      "contract": "Replay_044",
+      "trace_id": "accounting-repayment-splitting-one",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/044_Replay_044"
+    },
+    {
+      "sealed_order": 45,
+      "contract": "Replay_045",
+      "trace_id": "accounting-repayment-splitting-split",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/045_Replay_045"
+    },
+    {
+      "sealed_order": 46,
+      "contract": "Replay_046",
+      "trace_id": "accounting-valid-funding-after-threshold-and-payment",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/046_Replay_046"
+    },
+    {
+      "sealed_order": 47,
+      "contract": "Replay_047",
+      "trace_id": "errors-duplicate-against-store-atomic",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/047_Replay_047"
+    },
+    {
+      "sealed_order": 48,
+      "contract": "Replay_048",
+      "trace_id": "errors-duplicate-inside-batch-atomic",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/048_Replay_048"
+    },
+    {
+      "sealed_order": 50,
+      "contract": "Replay_050",
+      "trace_id": "errors-foreign-emitter",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/050_Replay_050"
+    },
+    {
+      "sealed_order": 51,
+      "contract": "Replay_051",
+      "trace_id": "errors-mark-default-created",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/051_Replay_051"
+    },
+    {
+      "sealed_order": 52,
+      "contract": "Replay_052",
+      "trace_id": "errors-mark-default-paid",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/052_Replay_052"
+    },
+    {
+      "sealed_order": 53,
+      "contract": "Replay_053",
+      "trace_id": "errors-mark-default-unknown",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/053_Replay_053"
+    },
+    {
+      "sealed_order": 54,
+      "contract": "Replay_054",
+      "trace_id": "errors-no-relevant-log",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/054_Replay_054"
+    },
+    {
+      "sealed_order": 55,
+      "contract": "Replay_055",
+      "trace_id": "errors-source-transaction-failed",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/055_Replay_055"
+    },
+    {
+      "sealed_order": 56,
+      "contract": "Replay_056",
+      "trace_id": "errors-unknown-evidence-read-apply",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/056_Replay_056"
+    },
+    {
+      "sealed_order": 57,
+      "contract": "Replay_057",
+      "trace_id": "errors-verification-reverted",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/057_Replay_057"
+    },
+    {
+      "sealed_order": 58,
+      "contract": "Replay_058",
+      "trace_id": "mandatory-closed-repayment-refinement-no-downgrade",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/058_Replay_058"
+    },
+    {
+      "sealed_order": 59,
+      "contract": "Replay_059",
+      "trace_id": "mandatory-closedat-same-and-change",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/059_Replay_059"
+    },
+    {
+      "sealed_order": 60,
+      "contract": "Replay_060",
+      "trace_id": "mandatory-late-partial-timely-full-late-partial-first",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/060_Replay_060"
+    },
+    {
+      "sealed_order": 61,
+      "contract": "Replay_061",
+      "trace_id": "mandatory-late-partial-timely-full-timely-full-first",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/061_Replay_061"
+    },
+    {
+      "sealed_order": 62,
+      "contract": "Replay_062",
+      "trace_id": "mandatory-one-transaction-two-events",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/specification/20260820T130333Z-623762/062_Replay_062"
+    }
+  ],
+  "evidentiary_caveat": "The 47 specification-prescribed traces were prescribed by the specification to both the reference model and implementation and therefore provide less independent evidence than the 16 independently-derived traces."
+}

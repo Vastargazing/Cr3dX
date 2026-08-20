@@ -23,6 +23,9 @@
     "deploy:deals": "node --import tsx scripts/deploy-deals.ts",
     "verify:live": "node --import tsx scripts/verify-live.ts",
     "deal:live": "node --import tsx scripts/deal-live.ts",
+    "s5:fresh": "node --import tsx scripts/deal-live.ts --mode fresh --runs 2",
+    "s5:continue": "node --import tsx scripts/deal-live.ts --mode continue --runs 1",
+    "s5:resume": "node --import tsx scripts/deal-live.ts --mode continue --resume-deal",
     "test:scripts": "node --import tsx --test scripts/lib/*.test.ts"
   },
   "dependencies": {

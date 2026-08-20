@@ -3,9 +3,11 @@
 Cr3dX reads every cross-chain fact through the Attestcoin Protocol precompiles on
 Creditcoin3 Testnet (chain id 102031), with Ethereum Sepolia as the source chain.
 This document records what the live network actually does, as opposed to what the
-source and the published documentation say it does. Every number below is produced
-by `npm run probe` (`scripts/probe.ts`) against the live testnet; raw results are
-committed under `data/probe/`.
+source and the published documentation say it does. Numbers here come from two
+places. The default is measurement: `npm run probe` (`scripts/probe.ts`) against the
+live testnet, with raw results committed under `data/probe/`. Where the protocol team
+has answered a question directly, their answer is the source and is cited with its
+date; measurement is then kept alongside it as corroboration, not as the authority.
 
 The block between the probe markers is regenerated on every run. Prose outside the
 markers is written by hand and is preserved.
@@ -201,14 +203,48 @@ A batch of 11 is rejected, which confirms the `MaxBatchSize = 10` bound from the
 
 Both calls were made on identical inputs (sample `minimal`, 1,248 byte blob).
 
-**The difference is exactly zero, which confirms finding F-1.** `verifyAndEmit` additionally runs
-`calculate_tx_index_impl` and emits a `LOG3`, but charges for neither: `LogExt::record` stores the log
+**The difference is exactly zero on the current Creditcoin3 Testnet.** It confirms
+the measured behavior at this network revision, not a stable pricing rule.
+`verifyAndEmit` additionally runs `calculate_tx_index_impl` and emits a `LOG3`, but
+the inspected precompile path charges for neither: `LogExt::record` stores the log
 without touching the gasometer, and the precompile never calls `compute_cost()` or
-`record_log_costs_manual`, which its sibling precompiles do. Under the standard formula the
-uncharged amount is `375 + 3*375 + 32*8 = 1,756` gas per event, up to 17,560 for a full batch of ten.
+`record_log_costs_manual`, which its sibling precompiles do. Under the standard
+formula our estimate of the missing charge is `375 + 3*375 + 32*8 = 1,756` gas per
+event, up to 17,560 for a full batch of ten.
 
-This is reported upstream rather than exploited. Cr3dX budgets gas as if the event were charged, so
-that closing the gap upstream cannot break our limits.
+The Creditcoin Team's answer is preliminary: the engineer thinks the log should be
+charged and warned that gas recording may rise by about a `LOG3` cost. Final
+confirmation is still pending. Cr3dX uses `verify`, so its contract logic is
+unaffected; the budgeting risk is for integrators that choose `verifyAndEmit`.
+
+**Provenance.** Asked by Valery Borovsky in Discord channel `#buidl-ctc-qna` on
+2026-08-20 at 8:00 AM:
+
+```text
+one side note from our Creditcoin3 Testnet gas runs: `verify` and
+`verifyAndEmit` show zero gas difference on identical inputs
+
+looking at the precompile, `verifyAndEmit`'s `LOG3` isn't calling
+`record_log_costs_manual` (while `attestor-stash` and `substrate transfer`
+both charge for logs)
+
+that event should typically cost ~1756 gas
+
+is this intended behavior right now, or should devs budget for
+`verifyAndEmit` getting more expensive down the line?
+```
+
+Full answer from `dL^ | Creditcoin`, Creditcoin Team, same channel and date,
+8:05 AM:
+
+```text
+i'll need to get back to you on this one, but technically I think it should be
+charged, so you can assume its possible that the gas recording may raise of
+the size of a log3 cost.
+```
+
+This remains an open upstream pricing question. It is reported rather than
+exploited, and budgets must tolerate the additional charge.
 
 ### 8. Decoding the proven transaction inside a contract
 
@@ -431,12 +467,14 @@ A continuity proof chains from its lower endpoint through one root per source
 block until it reaches something the chain still holds: an attestation or a
 checkpoint. Attestations are retained for a bounded window and then pruned;
 checkpoints survive, and there is one per ten attestations, which at an
-attestation interval of ten source blocks means roughly one per hundred blocks.
+attestation interval of ten source blocks means one per hundred blocks. The
+Creditcoin Team now says checkpoints stay forever under the current storage policy;
+see *The provability horizon, answered by the protocol team* below.
 
 So a fresh proof anchors to a nearby attestation and is short. Once that
-attestation is pruned, the same fact is still provable, but only by chaining out
-to the next surviving checkpoint, which is further away. The proof gets longer.
-The fact does not change.
+attestation is pruned, the same fact is provable only by chaining out to the next
+surviving checkpoint, which is further away. The proof gets longer. The fact does
+not change.
 
 ### What follows for Cr3dX
 
@@ -457,9 +495,12 @@ root. Modest, and it stops growing once the proof is anchored to the checkpoint
 grid rather than to a pruned attestation. Proving promptly is still cheaper than
 proving late.
 
-**Nothing is lost by waiting.** The retention window is a cost question, not a
-correctness one. A funding proven a week late is the same funding, and the deals
-contract settles it against the source block height either way.
+**Waiting costs gas; continued provability is externally confirmed.** Our own
+measurement exercised only about an hour. Separately, the Creditcoin Team says
+checkpoints stay forever and cryptographic evidence remains in an archive node, so a
+fresh proof can be generated later. Those are respectively a current runtime-storage
+policy and an operator-infrastructure statement, not immutable protocol guarantees;
+see *The provability horizon, answered by the protocol team* below.
 
 ---
 
@@ -600,9 +641,12 @@ Bisecting for the oldest surviving attestation, with the attested tip at
 | In time | about 28 minutes of Sepolia |
 | In attestations | about 14 |
 
-One sample, one moment, so treat the number as an order of magnitude rather than
-a constant. The shape is certain; the exact figure is not, and whether pruning is
-by count or by age is a question for the protocol team.
+That was one sample at one moment, and at the time the exact figure was held as an
+order of magnitude rather than a constant, with the count-or-age question left open
+for the protocol team. The team has since answered: pruning is by count, and ten
+attestations are retained. That accounts for this boundary to the block, but only
+once the checkpoint grid is taken into account, and it means the 140 is not a
+constant. See *Retention and cadence, answered by the protocol team*.
 
 ### What follows
 
@@ -611,17 +655,193 @@ proof carries at most one attestation interval of roots, eleven at worst. Outsid
 it, the anchor is the checkpoint grid and the proof carries up to a hundred and
 one. The measured price of missing the window is about 34,000 gas per submission.
 
-**Nothing is lost by missing it.** The fact stays provable indefinitely through
-checkpoints, and the deals contract settles by source block height regardless of
-when the proof arrives. This is a bill, not a deadline.
+**Missing it is a bill in our measurement.** The deals contract
+settles by source block height regardless of when the proof arrives, and past the
+window the fact was still provable through the checkpoint grid an hour later. That
+is the extent of our own test. Continued provability beyond it is sourced to the
+Creditcoin Team's separate answer below, not inferred from this run.
 
 **The worker gets a concrete target.** Submit within roughly twenty minutes of a
 height becoming attested and proofs stay short. That is comfortable: the builder
 trails the chain by at most a handful of blocks, and building and sending takes
-seconds.
+seconds. The target is a freshness heuristic rather than an expiry: the proof builder
+chooses the anchor at the moment of the request, so submitting promptly means the
+anchor is a recent attestation and the proof is short, while submitting late means it
+has re-anchored to a checkpoint and the proof is longer and dearer. Correctness is
+unaffected either way.
 
 **Evidence identifiers are independent of the verifier instance.** The redeployed
 verifier produced byte-identical identifiers for the same facts, which is what
 `keccak256(abi.encode(chainKey, height, txIndex, kind, eventNonce))` promises and
 now demonstrates. A redeployment replays the same history to the same names.
 
+---
+
+## Retention and cadence, answered by the protocol team
+
+The Creditcoin team answered our question directly. Their answer, not our bisection,
+is the source for the configuration below; the measurement stays as corroboration and
+is reconciled against it further down.
+
+| Parameter | Creditcoin3 Testnet, source Sepolia | Creditcoin mainnet, source Ethereum |
+|---|---|---|
+| Attestation interval | every 10 source blocks | same |
+| Checkpoint interval | every 10 attestations, i.e. every 100 source blocks | same |
+| Attestation retention | 10 | same |
+
+**Source:** Creditcoin team, Discord, 2026-08-20.
+
+**These are runtime parameters, not protocol invariants.** They are set by the runtime
+and exposed through the configuration pallet, which means a runtime upgrade or a
+governance action can change any of them without touching the precompile ABI, without
+a release note aimed at us, and without anything in this repository noticing. So
+"a checkpoint every 100 blocks" must not be written down as a permanent property of
+the protocol: it is the product of two current settings, and both can move. Two of the
+three are already read live by the probe — `AttestorApi_chain_attestation_interval`
+and `AttestorApi_attestation_checkpoint_interval`, both reading 10 on every run so far
+— which is the pattern the rest of our assumptions should follow where an accessor
+exists.
+
+### The measurement decomposes exactly, once the checkpoint grid is accounted for
+
+The bisection put the oldest surviving attestation at 11521710, with the attested tip
+at 11521850: 140 source blocks, or about fourteen attestations. Ten retained
+attestations is 100 blocks, so the two numbers do not match head-on, and the
+40-block remainder is worth being precise about, because it is easy to reach for the
+wrong explanation.
+
+It is **not** the attestation lag. The lag — 32 to 41 blocks over the probe run — is
+the distance between the Sepolia head and the attested tip, and this bisection was
+run against the attested tip, so the lag has already been subtracted out. Adding it
+back would double-count.
+
+What the remainder is, is the phase of the tip within the checkpoint grid. Retention
+of ten is evidently applied when a checkpoint is cut rather than continuously:
+
+| Term | Height |
+|---|---:|
+| Attested tip at bisection time | 11521850 |
+| Most recent checkpoint at or below it | 11521800 |
+| Ten retained attestations, counted back from that checkpoint | 11521710 … 11521800 |
+| **Predicted oldest survivor** | **11521710** |
+| **Observed oldest survivor** | **11521710** |
+
+Exact, to the block. Continuous pruning would predict a boundary at 11521750–11521760
+instead, and the bisection ruled that out: 11521710 was alive. The five attestations
+above the checkpoint (11521810 through 11521850) are simply not pruned yet, and the
+next checkpoint at 11521900 is what will take them.
+
+Two consequences for how the 140 should be read.
+
+**It is not a constant, and it is not an average to plan against.** The window behind
+the attested tip breathes with the tip's position in the 100-block checkpoint cycle:
+about 100 blocks just after a checkpoint is cut, about 190 just before the next one.
+140 was one draw from that range. Sizing anything against 140 assumes a phase we do
+not control.
+
+**The number to plan against is 100 blocks behind the attested tip**, the floor of
+that range — the guarantee that holds at every phase. At Sepolia's twelve seconds a
+block that is twenty minutes, which is where the worker's twenty-minute freshness
+target comes from and why it is the right size rather than a round guess.
+
+That the pruning cadence is tied to checkpoint creation is our inference from a single
+exact fit, not something the team stated. The fit is good enough to act on, and the
+planning floor of 100 blocks holds either way, since continuous pruning would give a
+flat 90 to 100.
+
+### What the 10 in "attestation retention" counts
+
+Ten attestations, not ten checkpoints. The team's phrasing does not carry the unit on
+its own, and the difference matters: ten retained checkpoints would be a thousand
+source blocks of anchors rather than a hundred.
+
+Our own measurement settles it. Under a ten-checkpoint reading, fine-grained
+attestations would have survived roughly a thousand source blocks back. The bisection
+found the opposite: attestations were already gone 150 blocks back, and both bounds
+around 11521650 were checkpoints. The ten-attestation reading predicts the observed
+boundary exactly, as set out above.
+
+Confirmation has been requested from the team. Until it arrives the unit is inferred
+from our data rather than stated by the source, and the whole window calculation rests
+on it — a thousand-block window and a hundred-block one are different products for the
+worker — so it is worth re-checking if the team's reply says otherwise.
+
+### Degradation, in the team's words
+
+The proof generator binds a proof to the best anchor available at the moment the proof
+is requested. That choice belongs to the generator; there is no way to influence it
+from our side and no way to re-anchor a proof after the fact.
+
+- A proof anchored to an ordinary attestation stops working once that attestation is
+  pruned. Proving the same fact then requires roots reaching back to a checkpoint,
+  which is a different proof, not a repaired one.
+- The remedy is to ask the API again. A fresh request for the same transaction returns
+  a proof anchored to whatever exists now, and it verifies.
+
+This is the mechanism that *Proofs expire, facts do not* inferred from the failing
+fixtures, now confirmed by the people who built it. It is why re-requesting the proof
+before every submission is a rule for the worker rather than an optimisation.
+
+### The provability horizon, answered by the protocol team
+
+The follow-up was explicitly about whether a fresh proof can be built in the future
+for an old transaction. It was not about whether a completed on-chain verification
+still needs an archive node.
+
+**Provenance.** Asked by Valery Borovsky in Discord channel `#buidl-ctc-qna` on
+2026-08-20 at 7:57 AM:
+
+```text
+quick last question for our docs: are checkpoints kept forever, or is there pruning / a horizon limit for them too?
+basically, can we still generate a fresh proof for an ancient tx down the road?
+
+we don't want to claim old txs stay provable forever if that's not actually guaranteed 🙏
+```
+
+Full answer from `dL^ | Creditcoin`, Creditcoin Team, same channel and date,
+8:01 AM:
+
+```text
+checkpoints stay forever, a transaction that was proven with an attestation
+is fine too, because the cryptographic evidence stays for ever in the archive
+node as well.
+
+I don't know for sure what you mean by caching proofs, if you cache them
+off-chain yeah. [edited]
+```
+
+The `[edited]` marker is UI metadata retained from the supplied screenshot; the
+plain-text Discord paste preserves the message text and paragraph boundary but omits
+that badge.
+
+The answer establishes two separate external facts with different authority
+boundaries.
+
+1. **Checkpoints stay forever.** In the context of the question, this confirms that
+   a future fresh proof for an old transaction can anchor to a checkpoint. This is
+   the current runtime storage policy, not an immutable protocol invariant; it may
+   change without notice.
+2. **A transaction previously proven through an attestation remains provable in the
+   future.** The archive node retains the cryptographic evidence needed to build a
+   new proof, while the checkpoint is the available anchor. This is an infrastructure
+   statement: archive-node retention depends on operator policy, is not exposed by
+   the configuration pallet, and is not a protocol guarantee.
+
+This is a team confirmation, not our measurement. Our independent observation covers
+only about an hour. The two claims must not be collapsed: the first describes current
+checkpoint storage, while the second depends on archive-node operation.
+
+The caching sentence is intentionally preserved in full and does **not** authorize
+reusing a continuity proof. The engineer explicitly said they were unsure what
+"caching proofs" meant. A proof tied to a pruned ordinary attestation remains invalid;
+the durable worker state is the source transaction and event identity, and every
+submission and retry requests a fresh proof. Any normative interpretation of
+off-chain caching needs a separate follow-up.
+
+**The retry ceiling remains, for operational hygiene.** A bounded attempt count is
+not a bounded wait under exponential backoff, and an indefinitely hidden task is a
+defect even when the underlying fact remains provable. The backoff is clamped and the
+ceiling applies to elapsed time as well as attempt count. Hitting it stops automatic
+retries only: the task and metadata remain, Evidence state on chain does not change,
+no terminal rejection is created, and the UI allows manual submission or explicit
+resumption.
