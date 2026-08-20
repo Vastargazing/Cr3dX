@@ -1,0 +1,125 @@
+{
+  "schema": "cr3dx-phase-b-independent-core-result-v1",
+  "status": "matched",
+  "success_label": "Phase B independent-core: 16/16 matched",
+  "matched_count": 16,
+  "expected_count": 16,
+  "accepted_pilot": {
+    "sealed_order": 0,
+    "contract": "Replay_000",
+    "trace_id": "ind-meta-batch-grouping-split-retry",
+    "status": "matched",
+    "result_directory": "phase-b-replay/results/20260820T123601Z-610060"
+  },
+  "remaining": [
+    {
+      "sealed_order": 1,
+      "contract": "Replay_001",
+      "trace_id": "ind-meta-batch-grouping-together",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/001_Replay_001"
+    },
+    {
+      "sealed_order": 2,
+      "contract": "Replay_002",
+      "trace_id": "ind-meta-classification-early-pending",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/002_Replay_002"
+    },
+    {
+      "sealed_order": 3,
+      "contract": "Replay_003",
+      "trace_id": "ind-meta-classification-late-rejected",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/003_Replay_003"
+    },
+    {
+      "sealed_order": 4,
+      "contract": "Replay_004",
+      "trace_id": "ind-meta-closedat-default-refine",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/004_Replay_004"
+    },
+    {
+      "sealed_order": 5,
+      "contract": "Replay_005",
+      "trace_id": "ind-meta-closedat-direct-late",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/005_Replay_005"
+    },
+    {
+      "sealed_order": 6,
+      "contract": "Replay_006",
+      "trace_id": "ind-meta-default-after-late",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/006_Replay_006"
+    },
+    {
+      "sealed_order": 7,
+      "contract": "Replay_007",
+      "trace_id": "ind-meta-default-after-timely",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/007_Replay_007"
+    },
+    {
+      "sealed_order": 8,
+      "contract": "Replay_008",
+      "trace_id": "ind-meta-default-before-late",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/008_Replay_008"
+    },
+    {
+      "sealed_order": 9,
+      "contract": "Replay_009",
+      "trace_id": "ind-meta-default-before-timely",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/009_Replay_009"
+    },
+    {
+      "sealed_order": 10,
+      "contract": "Replay_010",
+      "trace_id": "ind-meta-uncovered-fields-v0",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/010_Replay_010"
+    },
+    {
+      "sealed_order": 11,
+      "contract": "Replay_011",
+      "trace_id": "ind-meta-uncovered-fields-v1",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/011_Replay_011"
+    },
+    {
+      "sealed_order": 29,
+      "contract": "Replay_029",
+      "trace_id": "accounting-fixed-seed-000",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/029_Replay_029"
+    },
+    {
+      "sealed_order": 30,
+      "contract": "Replay_030",
+      "trace_id": "accounting-fixed-seed-007",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/030_Replay_030"
+    },
+    {
+      "sealed_order": 31,
+      "contract": "Replay_031",
+      "trace_id": "accounting-fixed-seed-042",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/031_Replay_031"
+    },
+    {
+      "sealed_order": 49,
+      "contract": "Replay_049",
+      "trace_id": "errors-empty-batch",
+      "status": "matched",
+      "result_directory": "phase-b-replay/results/independent/20260820T125256Z-616175/049_Replay_049"
+    }
+  ],
+  "deferred": {
+    "trace_count": 47,
+    "label": "47 specification-prescribed traces deferred"
+  }
+}

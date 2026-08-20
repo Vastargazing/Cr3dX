@@ -1,0 +1,4 @@
+Phase B: 63/63 matched
+Phase B independent-core: 16/16 matched
+Phase B specification-prescribed: 47/47 matched
+Caveat: the 47 specification-prescribed traces were prescribed by the specification to both sides and therefore prove less than the 16 independently-derived traces.

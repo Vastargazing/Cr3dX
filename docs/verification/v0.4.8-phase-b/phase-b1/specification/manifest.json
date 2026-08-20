@@ -1,0 +1,445 @@
+{
+  "schema": "cr3dx-phase-b-specification-prescribed-v1",
+  "source_index": {
+    "path": "phase-b-replay/staging/index.json",
+    "sha256": "e72de4d8ccf5d75d696cc590ffbb560f73b1e0a3ed398ddaea151fc3141430a8"
+  },
+  "provenance_class": "spec_prescribed",
+  "trace_count": 47,
+  "remaining_count": 47,
+  "prerequisite": {
+    "label": "Phase B independent-core: 16/16 matched",
+    "aggregate_path": "phase-b-replay/results/independent/20260820T125256Z-616175/aggregate-report.json",
+    "aggregate_sha256": "8ab5f54b155dd8266f0024fca76ddaa683b0841d277210ed560b1f989101d252",
+    "complete_path": "phase-b-replay/results/independent/20260820T125256Z-616175/COMPLETE.txt",
+    "complete_sha256": "9cffba7023382d4d6e7ab49513ed0cdb0c1bf181a71851db0df9878ad28656c4"
+  },
+  "success_label": "Phase B specification-prescribed: 47/47 matched",
+  "phase_b_success_label": "Phase B: 63/63 matched",
+  "evidentiary_caveat": "The 47 specification-prescribed traces were prescribed by the specification to both the reference model and implementation and therefore provide less independent evidence than the 16 independently-derived traces.",
+  "traces": [
+    {
+      "sealed_order": 12,
+      "contract": "Replay_012",
+      "trace_id": "two-phase-log-order-funding-first",
+      "filename": "Replay_012.t.sol",
+      "sha256": "91ca6bc904599a20d8720371ce1012cfa670c730f4f2314b7dc5854cf57b6418",
+      "execution": "pending",
+      "specification_sequence": 0
+    },
+    {
+      "sealed_order": 13,
+      "contract": "Replay_013",
+      "trace_id": "two-phase-log-order-repayment-first",
+      "filename": "Replay_013.t.sol",
+      "sha256": "98a3c910726008990de82861b51891414d939626ba99e79b2496992e02663f3a",
+      "execution": "pending",
+      "specification_sequence": 1
+    },
+    {
+      "sealed_order": 14,
+      "contract": "Replay_014",
+      "trace_id": "two-phase-stable-id-order-A-then-B",
+      "filename": "Replay_014.t.sol",
+      "sha256": "01d7252f7e6c4c1bac68e5eb32d96e3ed5a844e1df61a2e9bda53191f83836d4",
+      "execution": "pending",
+      "specification_sequence": 2
+    },
+    {
+      "sealed_order": 15,
+      "contract": "Replay_015",
+      "trace_id": "two-phase-stable-id-order-B-then-A",
+      "filename": "Replay_015.t.sol",
+      "sha256": "3ac87bafc1f6ecb569ee65e881c8543d368b59076712fe3b512e134b56946a14",
+      "execution": "pending",
+      "specification_sequence": 3
+    },
+    {
+      "sealed_order": 16,
+      "contract": "Replay_016",
+      "trace_id": "two-phase-transaction-order-funding-first",
+      "filename": "Replay_016.t.sol",
+      "sha256": "0dd19041026ad042b87c70957cbb6ee6df21a13fce36c5cc848119ccedc1e39f",
+      "execution": "pending",
+      "specification_sequence": 4
+    },
+    {
+      "sealed_order": 17,
+      "contract": "Replay_017",
+      "trace_id": "two-phase-transaction-order-repayment-first",
+      "filename": "Replay_017.t.sol",
+      "sha256": "eb5af51cfa8378d01c32aa4e3671f739d1d968c4de4d439940cbabf1c8c48055",
+      "execution": "pending",
+      "specification_sequence": 5
+    },
+    {
+      "sealed_order": 18,
+      "contract": "Replay_018",
+      "trace_id": "classification-explicit-retry-retry-before-funding",
+      "filename": "Replay_018.t.sol",
+      "sha256": "862ae340802ad0b88f937b084a57edadc69e74a918e6deddb1543c9e9353bef2",
+      "execution": "pending",
+      "specification_sequence": 6
+    },
+    {
+      "sealed_order": 19,
+      "contract": "Replay_019",
+      "trace_id": "classification-explicit-retry-retry-immediately-after",
+      "filename": "Replay_019.t.sol",
+      "sha256": "6f8a49c2b85ce998b1e552948db36608407ac592d8f38fde65c3f5321333bb37",
+      "execution": "pending",
+      "specification_sequence": 7
+    },
+    {
+      "sealed_order": 20,
+      "contract": "Replay_020",
+      "trace_id": "classification-explicit-retry-retry-much-later",
+      "filename": "Replay_020.t.sol",
+      "sha256": "52417533daad21218549152670eb39dbf186fc390d949077642b84a479357108",
+      "execution": "pending",
+      "specification_sequence": 8
+    },
+    {
+      "sealed_order": 21,
+      "contract": "Replay_021",
+      "trace_id": "classification-funding-dual-mismatch-recipient-wins",
+      "filename": "Replay_021.t.sol",
+      "sha256": "2ca722967fc647861abece03d2098a02d75672e2ebb3db85ea3d944f279c502d",
+      "execution": "pending",
+      "specification_sequence": 9
+    },
+    {
+      "sealed_order": 22,
+      "contract": "Replay_022",
+      "trace_id": "classification-funding-wrong-recipient",
+      "filename": "Replay_022.t.sol",
+      "sha256": "3a19fb7b8469c0a90390bc8399686d56e8017546336a12bd58861cb515cd467b",
+      "execution": "pending",
+      "specification_sequence": 10
+    },
+    {
+      "sealed_order": 23,
+      "contract": "Replay_023",
+      "trace_id": "classification-repayment-wrong-recipient-created",
+      "filename": "Replay_023.t.sol",
+      "sha256": "a36dd7a8be99186aae216734026ad3998b8050173747e573dc12df3626c27eaf",
+      "execution": "pending",
+      "specification_sequence": 11
+    },
+    {
+      "sealed_order": 24,
+      "contract": "Replay_024",
+      "trace_id": "classification-terminal-and-pending-idempotence",
+      "filename": "Replay_024.t.sol",
+      "sha256": "eb710b9b8957e1e901eba55a2f731cd07935b68f67e20eae3fbe6e4b0ef9c9c8",
+      "execution": "pending",
+      "specification_sequence": 12
+    },
+    {
+      "sealed_order": 25,
+      "contract": "Replay_025",
+      "trace_id": "classification-unknown-deal-create-retry",
+      "filename": "Replay_025.t.sol",
+      "sha256": "7df2468e6b34c51dda88ab06e041cccaa2b3c7af3978ec3378a51d71cc1e798f",
+      "execution": "pending",
+      "specification_sequence": 13
+    },
+    {
+      "sealed_order": 26,
+      "contract": "Replay_026",
+      "trace_id": "accounting-default-memory-A-then-B",
+      "filename": "Replay_026.t.sol",
+      "sha256": "0ee0b6e4e52a6156906720f3a7c07915ce558010f00ff410785f0f122b6c4a6c",
+      "execution": "pending",
+      "specification_sequence": 14
+    },
+    {
+      "sealed_order": 27,
+      "contract": "Replay_027",
+      "trace_id": "accounting-default-memory-B-then-A",
+      "filename": "Replay_027.t.sol",
+      "sha256": "900b45aa07b83622b2891d95bf5c357478abe1f799bff8dff8df1193c661dccc",
+      "execution": "pending",
+      "specification_sequence": 15
+    },
+    {
+      "sealed_order": 28,
+      "contract": "Replay_028",
+      "trace_id": "accounting-exposure-above-limit-after-default",
+      "filename": "Replay_028.t.sol",
+      "sha256": "7762ce95ffa78b102dfa7e8dc01f6b948e138b1327bcf2adcb720d71eeb25d69",
+      "execution": "pending",
+      "specification_sequence": 16
+    },
+    {
+      "sealed_order": 32,
+      "contract": "Replay_032",
+      "trace_id": "accounting-funding-permutation-0-60-50-40",
+      "filename": "Replay_032.t.sol",
+      "sha256": "4c858e38f644c874648c838e7df667ccecaf52cd62ddec81d7ffa89356848480",
+      "execution": "pending",
+      "specification_sequence": 17
+    },
+    {
+      "sealed_order": 33,
+      "contract": "Replay_033",
+      "trace_id": "accounting-funding-permutation-1-60-40-50",
+      "filename": "Replay_033.t.sol",
+      "sha256": "13af4602f09091686101fc9505f6df0fe8576c4669cf7bd80f36714491205f9c",
+      "execution": "pending",
+      "specification_sequence": 18
+    },
+    {
+      "sealed_order": 34,
+      "contract": "Replay_034",
+      "trace_id": "accounting-funding-permutation-2-50-60-40",
+      "filename": "Replay_034.t.sol",
+      "sha256": "0e566c6d91a5ce3a3ee39ebbc30aa36e7e3f89f9bd69189df8efd24fcf3185a8",
+      "execution": "pending",
+      "specification_sequence": 19
+    },
+    {
+      "sealed_order": 35,
+      "contract": "Replay_035",
+      "trace_id": "accounting-funding-permutation-3-50-40-60",
+      "filename": "Replay_035.t.sol",
+      "sha256": "5d2dd1d3634326bb10a8821389094d191d649d84412ba212b0e3864057dcc1b5",
+      "execution": "pending",
+      "specification_sequence": 20
+    },
+    {
+      "sealed_order": 36,
+      "contract": "Replay_036",
+      "trace_id": "accounting-funding-permutation-4-40-60-50",
+      "filename": "Replay_036.t.sol",
+      "sha256": "f0930196e75286a6d3df6912f3b5a4ca0f1631e525d61b2ef93e66d2409dc18a",
+      "execution": "pending",
+      "specification_sequence": 21
+    },
+    {
+      "sealed_order": 37,
+      "contract": "Replay_037",
+      "trace_id": "accounting-funding-permutation-5-40-50-60",
+      "filename": "Replay_037.t.sol",
+      "sha256": "5db954a7fa50be2c72b502f0a7fe796ac89e4b60a772d16f7baeeb8d75db8c14",
+      "execution": "pending",
+      "specification_sequence": 22
+    },
+    {
+      "sealed_order": 38,
+      "contract": "Replay_038",
+      "trace_id": "accounting-hard-limit-reservations",
+      "filename": "Replay_038.t.sol",
+      "sha256": "5ba4bc578f7b6918c50cd43fb2a219f56f79a05bb671239e906fe7ac4d7b8a1f",
+      "execution": "pending",
+      "specification_sequence": 23
+    },
+    {
+      "sealed_order": 39,
+      "contract": "Replay_039",
+      "trace_id": "accounting-overpayment-one",
+      "filename": "Replay_039.t.sol",
+      "sha256": "783b5bf2e471dc80714f27b469e29ffca1234fb044794015cc0fe2b84991137a",
+      "execution": "pending",
+      "specification_sequence": 24
+    },
+    {
+      "sealed_order": 40,
+      "contract": "Replay_040",
+      "trace_id": "accounting-overpayment-split",
+      "filename": "Replay_040.t.sol",
+      "sha256": "92c6a4a9ffbe57b2d08993a0bcac52230c93040fa98f370f83c68b5781dbc3bf",
+      "execution": "pending",
+      "specification_sequence": 25
+    },
+    {
+      "sealed_order": 41,
+      "contract": "Replay_041",
+      "trace_id": "accounting-past-due-funding-strict-default",
+      "filename": "Replay_041.t.sol",
+      "sha256": "03d5dcb6ac0014a6ea25614ee76f9626272a22081609c5123f1862d23112bdde",
+      "execution": "pending",
+      "specification_sequence": 26
+    },
+    {
+      "sealed_order": 42,
+      "contract": "Replay_042",
+      "trace_id": "accounting-repayment-full-order-late-then-timely",
+      "filename": "Replay_042.t.sol",
+      "sha256": "545f69a2e28705981dbedb1add362baa9b8e821649700b9d25f015a8d7b1f5b9",
+      "execution": "pending",
+      "specification_sequence": 27
+    },
+    {
+      "sealed_order": 43,
+      "contract": "Replay_043",
+      "trace_id": "accounting-repayment-full-order-timely-then-late",
+      "filename": "Replay_043.t.sol",
+      "sha256": "d5061a241337d11c7f78b2032271e7aa147cd2a7fdf2e635a311adcbfdb6c23a",
+      "execution": "pending",
+      "specification_sequence": 28
+    },
+    {
+      "sealed_order": 44,
+      "contract": "Replay_044",
+      "trace_id": "accounting-repayment-splitting-one",
+      "filename": "Replay_044.t.sol",
+      "sha256": "80e677dad0ad4d0365780691c55507130b862dd4ca78c70294b5b53b59a51f39",
+      "execution": "pending",
+      "specification_sequence": 29
+    },
+    {
+      "sealed_order": 45,
+      "contract": "Replay_045",
+      "trace_id": "accounting-repayment-splitting-split",
+      "filename": "Replay_045.t.sol",
+      "sha256": "64afc7ecb0022262ed555ebfc2cb8e24acc8750b32a8ba895a87c2c23f054676",
+      "execution": "pending",
+      "specification_sequence": 30
+    },
+    {
+      "sealed_order": 46,
+      "contract": "Replay_046",
+      "trace_id": "accounting-valid-funding-after-threshold-and-payment",
+      "filename": "Replay_046.t.sol",
+      "sha256": "615fa3d0629b2722d23e8720627ae1771a182254add228907998978828a23f9f",
+      "execution": "pending",
+      "specification_sequence": 31
+    },
+    {
+      "sealed_order": 47,
+      "contract": "Replay_047",
+      "trace_id": "errors-duplicate-against-store-atomic",
+      "filename": "Replay_047.t.sol",
+      "sha256": "cf110415b9ba9ee1d242f1bfabbb6653a7d5a6384c4b471003033adfd8400df7",
+      "execution": "pending",
+      "specification_sequence": 32
+    },
+    {
+      "sealed_order": 48,
+      "contract": "Replay_048",
+      "trace_id": "errors-duplicate-inside-batch-atomic",
+      "filename": "Replay_048.t.sol",
+      "sha256": "ff7595748f85eb3343eae01ea7b5814f8666b65c5e2528ee2339b57088699d69",
+      "execution": "pending",
+      "specification_sequence": 33
+    },
+    {
+      "sealed_order": 50,
+      "contract": "Replay_050",
+      "trace_id": "errors-foreign-emitter",
+      "filename": "Replay_050.t.sol",
+      "sha256": "817c5448ebae115b8f9328a23c1bf0fb17422bc3da29a8992b36141bb8c8510a",
+      "execution": "pending",
+      "specification_sequence": 34
+    },
+    {
+      "sealed_order": 51,
+      "contract": "Replay_051",
+      "trace_id": "errors-mark-default-created",
+      "filename": "Replay_051.t.sol",
+      "sha256": "8950fa80c2de76e80fab50d02537cb3eb633e6c975143ede66199ebc14e7fd2e",
+      "execution": "pending",
+      "specification_sequence": 35
+    },
+    {
+      "sealed_order": 52,
+      "contract": "Replay_052",
+      "trace_id": "errors-mark-default-paid",
+      "filename": "Replay_052.t.sol",
+      "sha256": "6d7871c72b92fae07ac5f5635ba7871f71c8fd9057addaf30d84aeb0a22f45e8",
+      "execution": "pending",
+      "specification_sequence": 36
+    },
+    {
+      "sealed_order": 53,
+      "contract": "Replay_053",
+      "trace_id": "errors-mark-default-unknown",
+      "filename": "Replay_053.t.sol",
+      "sha256": "559d52db42a198950eae3d0e4884c05e043a2f58ac9df3b874708b77dc32154d",
+      "execution": "pending",
+      "specification_sequence": 37
+    },
+    {
+      "sealed_order": 54,
+      "contract": "Replay_054",
+      "trace_id": "errors-no-relevant-log",
+      "filename": "Replay_054.t.sol",
+      "sha256": "23222723e6227488f6cf840136d183b8277954b0b7741faba23bfd89aefa9fdf",
+      "execution": "pending",
+      "specification_sequence": 38
+    },
+    {
+      "sealed_order": 55,
+      "contract": "Replay_055",
+      "trace_id": "errors-source-transaction-failed",
+      "filename": "Replay_055.t.sol",
+      "sha256": "9801d294181ca89b23585c897b73240e1b440860e6b7c6ec45587e3809afc998",
+      "execution": "pending",
+      "specification_sequence": 39
+    },
+    {
+      "sealed_order": 56,
+      "contract": "Replay_056",
+      "trace_id": "errors-unknown-evidence-read-apply",
+      "filename": "Replay_056.t.sol",
+      "sha256": "d3b42b649949603dd5a09cde9ba56a8529cbda7d0c5d045acb25dc6bd19c3d05",
+      "execution": "pending",
+      "specification_sequence": 40
+    },
+    {
+      "sealed_order": 57,
+      "contract": "Replay_057",
+      "trace_id": "errors-verification-reverted",
+      "filename": "Replay_057.t.sol",
+      "sha256": "bdf26d698c67364ebf32ea30b19b9b79b7cf3446cefefd9845cc9e49b9f18e5a",
+      "execution": "pending",
+      "specification_sequence": 41
+    },
+    {
+      "sealed_order": 58,
+      "contract": "Replay_058",
+      "trace_id": "mandatory-closed-repayment-refinement-no-downgrade",
+      "filename": "Replay_058.t.sol",
+      "sha256": "242122ad7895dfa96475c921b687851b3aa839a1c445c6ac9af6392b389b57a0",
+      "execution": "pending",
+      "specification_sequence": 42
+    },
+    {
+      "sealed_order": 59,
+      "contract": "Replay_059",
+      "trace_id": "mandatory-closedat-same-and-change",
+      "filename": "Replay_059.t.sol",
+      "sha256": "5bcffd8ef1bcb9cc935a46f50ff734079c121a5bade5f9e9c7d08dd283ece10d",
+      "execution": "pending",
+      "specification_sequence": 43
+    },
+    {
+      "sealed_order": 60,
+      "contract": "Replay_060",
+      "trace_id": "mandatory-late-partial-timely-full-late-partial-first",
+      "filename": "Replay_060.t.sol",
+      "sha256": "977ad6b742e9da70f9c8c0035b2a01b39baf8e9d0bddf60883ce740aa71a0f2a",
+      "execution": "pending",
+      "specification_sequence": 44
+    },
+    {
+      "sealed_order": 61,
+      "contract": "Replay_061",
+      "trace_id": "mandatory-late-partial-timely-full-timely-full-first",
+      "filename": "Replay_061.t.sol",
+      "sha256": "7465705bbadd91da43c27499892c471d13d93c91584eaab9903f3a38c3b37fe0",
+      "execution": "pending",
+      "specification_sequence": 45
+    },
+    {
+      "sealed_order": 62,
+      "contract": "Replay_062",
+      "trace_id": "mandatory-one-transaction-two-events",
+      "filename": "Replay_062.t.sol",
+      "sha256": "be3c6df231f42ba1263b8d196f47bd0447aa91a50bc9bc1323c1dd7f6c38653b",
+      "execution": "pending",
+      "specification_sequence": 46
+    }
+  ]
+}

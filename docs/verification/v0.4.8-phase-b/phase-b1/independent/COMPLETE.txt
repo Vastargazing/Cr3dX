@@ -1,0 +1,2 @@
+Phase B independent-core: 16/16 matched
+47 specification-prescribed traces deferred
