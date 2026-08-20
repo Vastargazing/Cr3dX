@@ -1,5 +1,20 @@
 import 'dotenv/config';
 
+/**
+ * Node's global TLS escape hatch disables certificate verification for every
+ * HTTPS request in the process. A live proof/deployment command must never run
+ * in that state: an RPC or proof-builder response would be unauthenticated.
+ *
+ * Some managed shells inject the variable outside the repository. In that
+ * case launch the command with `env -u NODE_TLS_REJECT_UNAUTHORIZED ...`; do
+ * not replace this guard with a warning.
+ */
+if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
+  throw new Error(
+    'Refusing to run with NODE_TLS_REJECT_UNAUTHORIZED=0. Remove it from the parent environment or prefix the command with `env -u NODE_TLS_REJECT_UNAUTHORIZED`.',
+  );
+}
+
 function required(name: string, fallback?: string): string {
   const v = process.env[name] ?? fallback;
   if (!v) throw new Error(`Missing required environment variable ${name}. Copy .env.example to .env and fill it in.`);

@@ -25,12 +25,20 @@
       "dealsDeploymentBlock": 5337092,
       "supersededAt": "2026-08-19T16:36:27.401Z",
       "reason": "v0.4.4 changed applied behaviour: funding from the designated investor is no longer refused after the threshold, and a repayment recipient is checked against designatedInvestor from creation. The deployed registry enforces the superseded rules."
+    },
+    {
+      "deals": "0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c",
+      "credit": "0x8234C87eCE3a88a7A9E2f987Ec44acc9f801529d",
+      "dealsDeploymentTx": "0x3f39822da9f21bf79e6215eb4b6312101d8abae0e5e54e6aea91ceb579f6b2c3",
+      "dealsDeploymentBlock": 5337276,
+      "supersededAt": "2026-08-20T04:52:19.115Z",
+      "reason": "S5 fresh mode: prove the complete scenario from score 500 and empty history"
     }
   ],
-  "deals": "0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c",
-  "credit": "0x8234C87eCE3a88a7A9E2f987Ec44acc9f801529d",
-  "dealsDeploymentTx": "0x3f39822da9f21bf79e6215eb4b6312101d8abae0e5e54e6aea91ceb579f6b2c3",
-  "dealsDeploymentBlock": 5337276,
+  "deals": "0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485",
+  "credit": "0x13AEC440a6cA605974Af15a9ef5B77EBC1442480",
+  "dealsDeploymentTx": "0xd5ed5e5bc8339c71e1196d432bedc6a0007f290fc4e6f6ea91dc49ed8335bfdf",
+  "dealsDeploymentBlock": 5340937,
   "baseLimit": "5000000000",
   "attestationGracePeriod": 600
 }

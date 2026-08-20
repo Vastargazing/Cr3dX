@@ -6,7 +6,7 @@
  * only, so it is safe to paste into faucet forms and run logs.
  */
 import { execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {chmodSync, existsSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync} from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { Wallet } from 'ethers';
@@ -79,7 +79,27 @@ function generate(count: number): CastWallet[] {
   });
 }
 
+function assertPrivateModeSupport(): void {
+  if (process.platform === 'win32') return;
+  const existing = existsSync(ENV_PATH);
+  const checkedPath = existing ? ENV_PATH : `${ENV_PATH}.permissions-check-${process.pid}`;
+  try {
+    if (!existing) writeFileSync(checkedPath, '', {encoding: 'utf8', flag: 'wx', mode: 0o600});
+    chmodSync(checkedPath, 0o600);
+    const actual = statSync(checkedPath).mode & 0o777;
+    if ((actual & 0o077) !== 0) {
+      throw new Error(
+        `the filesystem reports mode ${actual.toString(8)} after chmod 600; refusing to store private keys here. ` +
+          'Use a checkout on a filesystem with Unix permissions, or provide the variables without an .env file.',
+      );
+    }
+  } finally {
+    if (!existing && existsSync(checkedPath)) unlinkSync(checkedPath);
+  }
+}
+
 function main(): void {
+  assertPrivateModeSupport();
   const original = existsSync(ENV_PATH) ? readFileSync(ENV_PATH, 'utf8') : '';
   const existing = roles.map((role) => readKey(original, role.variable));
   const created = generate(existing.filter((key) => !key).length);

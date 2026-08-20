@@ -129,7 +129,7 @@ async function main(): Promise<void> {
   requireAtLeast(state, 'B', 'Sepolia ETH', ethB, MIN_SEPOLIA_ETH_B, formatEther);
   reportBorrowerCtc(state, ctcA, ctcB);
   log(
-    `note: \`deal:live\` spends ${formatUnits(DEAL_RUN_USDC_B, decimals)} USDC of B's own on top of the capture run: ` +
+    `note: \`s5:continue\` spends ${formatUnits(DEAL_RUN_USDC_B, decimals)} USDC of B's own on top of the capture run: ` +
       'B pays the face value and receives the funding, so only the margin between them is new money',
   );
 
@@ -159,14 +159,14 @@ async function main(): Promise<void> {
   }
   log(
     'READY: npm run deploy:sepolia && npm run capture:gate && npm run deploy:creditcoin && ' +
-      'npm run verify:live && npm run deploy:deals && npm run deal:live',
+      'npm run verify:live && npm run deploy:deals && npm run s5:continue',
   );
 }
 
 /**
  * Wallet B needs Creditcoin gas now that it is the account that creates deals.
  *
- * This is not a faucet action when A can cover it, because `deal:live` tops B up
+ * This is not a faucet action when A can cover it, because `s5:continue` tops B up
  * itself. Reporting it as one would send the operator looking for a faucet that
  * dispenses to an address they could have funded from their other wallet in one
  * transaction. It becomes a blocker only when neither wallet has the gas.
@@ -179,7 +179,7 @@ function reportBorrowerCtc(state: CheckState, ctcA: bigint, ctcB: bigint): void 
   const topUpCovered = ctcA >= MIN_CREDITCOIN_CTC_A + MIN_CREDITCOIN_CTC_B;
   if (topUpCovered) {
     log(
-      `OK B test CTC: ${formatEther(ctcB)} held; \`deal:live\` will top B up from A, which holds ` +
+      `OK B test CTC: ${formatEther(ctcB)} held; \`s5:continue\` will top B up from A, which holds ` +
         `${formatEther(ctcA)}`,
     );
     return;

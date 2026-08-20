@@ -1,0 +1,240 @@
+[deal] A proxy is configured (http://127.0.0.1:10809) but Node will ignore it. Re-run with NODE_USE_ENV_PROXY=1 if requests time out.
+[deal] S5 mode fresh, 2 consecutive run(s)
+[deal] proofs are rebuilt immediately before every submitAndApply; no stored proof is replayed
+[deal] gateway 0x11DD8a4c790939DEa8CED631dB27Afe54334a749, token 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+[deal] A deployer/investor 0x0e4Fbc156afdd9271267E64F11CDba99747156C6
+[deal] B borrower/payer    0x73eEb564d3DebFdc2baf3281f9645C0068E862DF
+[deal] private keys came only from ignored .env and are never printed or written
+[deal]
+[deal] === preflight: every blocker is checked before the first transaction
+[deal] balance capacity: floor(B 20.7 USDC / 0.1 USDC) = 207 run(s)
+[deal] requested 2: B must hold at least 0.2 USDC before the first transaction
+[deal] initial credit: score 500, limit 5000.0 USDC, reserved 0.0 USDC, exposure 0.0 USDC, available 5000.0 USDC
+[deal] reserve capacity: floor(available 5000.0 USDC / second-deal nominal 1.1 USDC) = 4545 run(s)
+[deal] PREFLIGHT PASSED: balances, both run-capacity limits, networks and deployment inputs are ready
+[deal]
+[deal] === fresh deployment: new Deals/Credit over the unchanged gateway and verifier
+[deploy] A proxy is configured (http://127.0.0.1:10809) but Node will ignore it. Re-run with NODE_USE_ENV_PROXY=1 if requests time out.
+[deploy] verifier 0xAf07fCFe36079bD37E94f40f928EE8b088f56B47, chainKey 1, trusts gateway 0x11DD8a4c790939DEa8CED631dB27Afe54334a749
+[deploy] base limit 5000000000 native units (5000.0 at 6 decimals)
+[deploy] attestation grace period 600 source blocks
+[deploy] deployer 0x0e4Fbc156afdd9271267E64F11CDba99747156C6, balance 9999.984493903 CTC
+[deploy] deployer nonce 17, this deployment will land at 0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485
+[deploy] sent 0xd5ed5e5bc8339c71e1196d432bedc6a0007f290fc4e6f6ea91dc49ed8335bfdf, waiting for inclusion
+[deploy] registry deployed at 0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485 in block 5340937, gas used 2625205
+[deploy] credit layer deployed at 0x13AEC440a6cA605974Af15a9ef5B77EBC1442480 by the registry itself
+[deploy] recorded in deployments/creditcoin.json
+[deal] registry 0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485, credit 0x13AEC440a6cA605974Af15a9ef5B77EBC1442480, chainKey 1
+[deal] fresh-state assertion: score 500, reserved 0.0 USDC, exposure 0.0 USDC, history 0 deal(s)
+[deal] B holds 0.009740452 CTC, no top-up needed
+[deal]
+[deal] ################ S5 RUN 1 ################
+[deal] === 1.1 B creates primary deal; Sepolia head 11526842, due block 11527242
+[deal]     0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770, tx 0x318052eb6ea7e58a6e2a7419c53daed407284521d3426c58d663458e19234fe8, gas 259548
+[deal]     STATE 1.1 after primary create
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 0.0 USDC; score 500; limit 5000.0 USDC; available 4998.9 USDC
+[deal] === 1.2 A funds B on Sepolia
+[deal]     approve gateway for 1.0 USDC
+[deal]     1.0 USDC, block 11526847, https://sepolia.etherscan.io/tx/0x3733b95365055253f5e0ef559c277089cf44263f4a63117e477d60a66a697e65
+[deal]     STATE 1.2 after source funding
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 0.0 USDC; score 500; limit 5000.0 USDC; available 4998.9 USDC
+[deal] === 1.3 B emits an unauthorized funding fact (self-transfer)
+[deal]     approve gateway for 0.000001 USDC
+[deal]     STATE 1.3 after source impostor funding
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 0.0 USDC; score 500; limit 5000.0 USDC; available 4998.9 USDC
+[deal] === 1.4 wait for funding attestation with visible progress
+[deal]     run 1 funding: attested -1/11526850, 11526851 blocks left, 0m 11s elapsed
+[deal]     run 1 funding: attested 11526810/11526850, 40 blocks left, 0m 41s elapsed
+[deal]     run 1 funding: attested 11526820/11526850, 30 blocks left, 1m 12s elapsed
+[deal]     run 1 funding: attested 11526820/11526850, 30 blocks left, 1m 43s elapsed
+[deal]     run 1 funding: attested 11526820/11526850, 30 blocks left, 2m 14s elapsed
+[deal]     run 1 funding: attested 11526820/11526850, 30 blocks left, 2m 45s elapsed
+[deal]     run 1 funding: attested 11526830/11526850, 20 blocks left, 3m 16s elapsed
+[deal]     run 1 funding: attested 11526830/11526850, 20 blocks left, 3m 46s elapsed
+[deal]     run 1 funding: attested 11526830/11526850, 20 blocks left, 4m 17s elapsed
+[deal]     run 1 funding: attested 11526830/11526850, 20 blocks left, 4m 48s elapsed
+[deal]     run 1 funding: attested -1/11526850, 11526851 blocks left, 5m 28s elapsed
+[deal]     run 1 funding: attested 11526840/11526850, 10 blocks left, 5m 59s elapsed
+[deal]     run 1 funding: attested 11526840/11526850, 10 blocks left, 6m 30s elapsed
+[deal]     run 1 funding: attested 11526850 covers 11526850; waited 7m 1s
+[deal] === 1.5 build fresh proofs and submitAndApply
+[deal]     fresh proof for 0x3733b95365...: height 11526847, 4 roots
+[deal]     submitAndApply (funding): 0xfd3f4eaab237dd6ed269a6574cb391fe9975aadf9108933406b36a602078af7a, gas 332430
+[deal]       FundingApplied
+[deal]       DealFinanced
+[deal]     STATE 1.5 after financing proof
+[deal]       status FINANCED; funded 1.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 0.0 USDC; exposure 1.1 USDC; score 500; limit 5000.0 USDC; available 4998.9 USDC
+[deal]     fresh proof for 0x41254297b1...: height 11526850, 1 roots
+[deal]     submitAndApply (impostor funding): 0xfb1f4aecc37d38a51ea361bdf192d5ff483148f2fee22c11c6df27139e095272, gas 251272
+[deal]       EvidenceRejected
+[deal]     impostor evidence REJECTED_PERMANENT / WRONG_INVESTOR
+[deal]     STATE 1.5 after impostor proof
+[deal]       status FINANCED; funded 1.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 0.0 USDC; exposure 1.1 USDC; score 500; limit 5000.0 USDC; available 4998.9 USDC
+[deal] === 1.6 B repays A on Sepolia
+[deal]     approve gateway for 1.1 USDC
+[deal]     1.1 USDC, block 11526890, https://sepolia.etherscan.io/tx/0xd9e5a3d44330fade41e4b4a14a0fe32d2d1f086f3b5ef220f906ec0a9afe5953
+[deal]     STATE 1.6 after source repayment
+[deal]       status FINANCED; funded 1.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 0.0 USDC; exposure 1.1 USDC; score 500; limit 5000.0 USDC; available 4998.9 USDC
+[deal] === 1.7 wait, rebuild proof, submitAndApply repayment
+[deal]     run 1 repayment: attested 11526850/11526890, 40 blocks left, 0m 1s elapsed
+[deal]     run 1 repayment: attested 11526850/11526890, 40 blocks left, 0m 31s elapsed
+[deal]     run 1 repayment: attested 11526860/11526890, 30 blocks left, 1m 2s elapsed
+[deal]     run 1 repayment: attested 11526860/11526890, 30 blocks left, 1m 33s elapsed
+[deal]     run 1 repayment: attested 11526860/11526890, 30 blocks left, 2m 3s elapsed
+[deal]     run 1 repayment: attested 11526860/11526890, 30 blocks left, 2m 34s elapsed
+[deal]     run 1 repayment: attested 11526860/11526890, 30 blocks left, 3m 5s elapsed
+[deal]     run 1 repayment: attested 11526870/11526890, 20 blocks left, 3m 36s elapsed
+[deal]     run 1 repayment: attested 11526870/11526890, 20 blocks left, 4m 6s elapsed
+[deal]     run 1 repayment: attested 11526870/11526890, 20 blocks left, 4m 37s elapsed
+[deal]     run 1 repayment: attested 11526870/11526890, 20 blocks left, 5m 8s elapsed
+[deal]     run 1 repayment: attested 11526880/11526890, 10 blocks left, 5m 39s elapsed
+[deal]     run 1 repayment: attested 11526880/11526890, 10 blocks left, 6m 9s elapsed
+[deal]     run 1 repayment: attested 11526880/11526890, 10 blocks left, 6m 40s elapsed
+[deal]     run 1 repayment: attested 11526890 covers 11526890; waited 7m 10s
+[deal]     fresh proof for 0xd9e5a3d443...: height 11526890, 1 roots
+[deal]     submitAndApply (repayment): 0x288e3877c6b5dc82351f93858e908dfbf4de325f6df9f0e4adca8341dac5c394, gas 336504
+[deal]       RepaymentApplied
+[deal]       DealSettled
+[deal]     STATE 1.7 after repayment proof
+[deal]       status PAID_ON_TIME; funded 1.0 USDC; repaid 1.1 USDC; on-time 1.1 USDC; outstanding 0.0 USDC
+[deal]       reserve 0.0 USDC; exposure 0.0 USDC; score 525; limit 5250.0 USDC; available 5250.0 USDC
+[deal] === 1.8 create second deal and leave it unfunded to demonstrate reserve drift
+[deal]     0x3fc766fc26efb07e89b3cfa556aedefa6a78c356a1439b62ab8df6f1d2ccd549, tx 0x5a088a3ccde14f87457cfa6c84c2d00282fc9886922cf4fdf05390ac851bf15b, gas 225348
+[deal]     STATE 1.8 after second unfunded deal
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 0.0 USDC; score 525; limit 5250.0 USDC; available 5248.9 USDC
+[deal] run 1 complete: score 500 -> 525, limit 5000.0 USDC -> 5250.0 USDC
+[deal]
+[deal] ################ S5 RUN 2 ################
+[deal] === 2.1 B creates primary deal; Sepolia head 11526927, due block 11527327
+[deal]     0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3, tx 0xef5121f50a99188599a8723588ecb917b16936ad14f840cd28545ff684770759, gas 208248
+[deal]     STATE 2.1 after primary create
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 2.2 USDC; exposure 0.0 USDC; score 525; limit 5250.0 USDC; available 5247.8 USDC
+[deal] === 2.2 A funds B on Sepolia
+[deal]     approve gateway for 1.0 USDC
+[deal]     1.0 USDC, block 11526932, https://sepolia.etherscan.io/tx/0xa792d0630b8c02baf400fa9d0db822977f265b8017be848e2d52b29f53a45a63
+[deal]     STATE 2.2 after source funding
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 2.2 USDC; exposure 0.0 USDC; score 525; limit 5250.0 USDC; available 5247.8 USDC
+[deal] === 2.3 B emits an unauthorized funding fact (self-transfer)
+[deal]     approve gateway for 0.000001 USDC
+[deal]     STATE 2.3 after source impostor funding
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 2.2 USDC; exposure 0.0 USDC; score 525; limit 5250.0 USDC; available 5247.8 USDC
+[deal] === 2.4 wait for funding attestation with visible progress
+[deal]     run 2 funding: attested 11526900/11526935, 35 blocks left, 0m 1s elapsed
+[deal]     run 2 funding: attested 11526900/11526935, 35 blocks left, 0m 32s elapsed
+[deal]     run 2 funding: attested 11526900/11526935, 35 blocks left, 1m 2s elapsed
+[deal]     run 2 funding: attested 11526900/11526935, 35 blocks left, 1m 33s elapsed
+[deal]     run 2 funding: attested 11526910/11526935, 25 blocks left, 2m 4s elapsed
+[deal]     run 2 funding: attested 11526910/11526935, 25 blocks left, 2m 34s elapsed
+[deal]     run 2 funding: attested 11526910/11526935, 25 blocks left, 3m 5s elapsed
+[deal]     run 2 funding: attested 11526910/11526935, 25 blocks left, 3m 36s elapsed
+[deal]     run 2 funding: attested 11526920/11526935, 15 blocks left, 4m 7s elapsed
+[deal]     run 2 funding: attested 11526920/11526935, 15 blocks left, 4m 37s elapsed
+[deal]     run 2 funding: attested 11526920/11526935, 15 blocks left, 5m 8s elapsed
+[deal]     run 2 funding: attested 11526920/11526935, 15 blocks left, 5m 39s elapsed
+[deal]     run 2 funding: attested 11526930/11526935, 5 blocks left, 6m 10s elapsed
+[deal]     run 2 funding: attested 11526930/11526935, 5 blocks left, 6m 41s elapsed
+[deal]     run 2 funding: attested 11526930/11526935, 5 blocks left, 7m 12s elapsed
+[deal]     run 2 funding: attested 11526930/11526935, 5 blocks left, 7m 42s elapsed
+[deal]     run 2 funding: attested 11526930/11526935, 5 blocks left, 8m 13s elapsed
+[deal]     run 2 funding: attested 11526940 covers 11526935; waited 8m 44s
+[deal] === 2.5 build fresh proofs and submitAndApply
+[deal]     fresh proof for 0xa792d0630b...: height 11526932, 9 roots
+[deal]     submitAndApply (funding): 0x9a34472c1c59544a8d2c42102fc66cd51c54f2ad82943a6a1accddf6bf4eabe5, gas 333774
+[deal]       FundingApplied
+[deal]       DealFinanced
+[deal]     STATE 2.5 after financing proof
+[deal]       status FINANCED; funded 1.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 1.1 USDC; score 525; limit 5250.0 USDC; available 5247.8 USDC
+[deal]     fresh proof for 0x692ceaa864...: height 11526935, 6 roots
+[deal]     submitAndApply (impostor funding): 0xd8890b090a4efc704280172535d27a18142eda92aec55ef275de4661cb6b51ed, gas 253512
+[deal]       EvidenceRejected
+[deal]     impostor evidence REJECTED_PERMANENT / WRONG_INVESTOR
+[deal]     STATE 2.5 after impostor proof
+[deal]       status FINANCED; funded 1.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 1.1 USDC; score 525; limit 5250.0 USDC; available 5247.8 USDC
+[deal] === 2.6 B repays A on Sepolia
+[deal]     approve gateway for 1.1 USDC
+[deal]     1.1 USDC, block 11526982, https://sepolia.etherscan.io/tx/0x6b5f4cb2ad7ce4b9f08e775007fd6bdc6b05a462b43d0b2f1c24bfd637d77a53
+[deal]     STATE 2.6 after source repayment
+[deal]       status FINANCED; funded 1.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 1.1 USDC; exposure 1.1 USDC; score 525; limit 5250.0 USDC; available 5247.8 USDC
+[deal] === 2.7 wait, rebuild proof, submitAndApply repayment
+[deal]     run 2 repayment: attested 11526940/11526982, 42 blocks left, 0m 1s elapsed
+[deal]     run 2 repayment: attested 11526940/11526982, 42 blocks left, 0m 32s elapsed
+[deal]     run 2 repayment: attested 11526950/11526982, 32 blocks left, 1m 2s elapsed
+[deal]     run 2 repayment: attested 11526950/11526982, 32 blocks left, 1m 33s elapsed
+[deal]     run 2 repayment: attested 11526950/11526982, 32 blocks left, 2m 4s elapsed
+[deal]     run 2 repayment: attested 11526950/11526982, 32 blocks left, 2m 35s elapsed
+[deal]     run 2 repayment: attested 11526960/11526982, 22 blocks left, 3m 6s elapsed
+[deal]     run 2 repayment: attested 11526960/11526982, 22 blocks left, 3m 37s elapsed
+[deal]     run 2 repayment: attested 11526960/11526982, 22 blocks left, 4m 8s elapsed
+[deal]     run 2 repayment: attested 11526960/11526982, 22 blocks left, 4m 38s elapsed
+[deal]     run 2 repayment: attested 11526970/11526982, 12 blocks left, 5m 9s elapsed
+[deal]     run 2 repayment: attested 11526970/11526982, 12 blocks left, 5m 40s elapsed
+[deal]     run 2 repayment: attested 11526970/11526982, 12 blocks left, 6m 11s elapsed
+[deal]     run 2 repayment: attested 11526970/11526982, 12 blocks left, 6m 41s elapsed
+[deal]     run 2 repayment: attested 11526970/11526982, 12 blocks left, 7m 12s elapsed
+[deal]     run 2 repayment: attested 11526980/11526982, 2 blocks left, 7m 43s elapsed
+[deal]     run 2 repayment: attested 11526980/11526982, 2 blocks left, 8m 14s elapsed
+[deal]     run 2 repayment: attested 11526980/11526982, 2 blocks left, 8m 45s elapsed
+[deal]     run 2 repayment: attested 11526990 covers 11526982; waited 9m 16s
+[deal]     fresh proof for 0x6b5f4cb2ad...: height 11526982, 9 roots
+[deal]     submitAndApply (repayment): 0x4f3a9dc210076b4c3aa2f2b6353fadb6528ea756d6433dfd76c4e83cdff60ee5, gas 339192
+[deal]       RepaymentApplied
+[deal]       DealSettled
+[deal]     STATE 2.7 after repayment proof
+[deal]       status PAID_ON_TIME; funded 1.0 USDC; repaid 1.1 USDC; on-time 1.1 USDC; outstanding 0.0 USDC
+[deal]       reserve 1.1 USDC; exposure 0.0 USDC; score 550; limit 5500.0 USDC; available 5498.9 USDC
+[deal] === 2.8 create second deal and leave it unfunded to demonstrate reserve drift
+[deal]     0x58a14b5295c78edf3cbbcacc137388e04423ff05be9e19e3ed02c99965d3002c, tx 0xf735c8daccfb530408c6c4692078d28a8386a6ffb7c1087394a6c295ccb46e42, gas 208248
+[deal]     STATE 2.8 after second unfunded deal
+[deal]       status CREATED; funded 0.0 USDC; repaid 0.0 USDC; on-time 0.0 USDC; outstanding 1.1 USDC
+[deal]       reserve 2.2 USDC; exposure 0.0 USDC; score 550; limit 5500.0 USDC; available 5497.8 USDC
+[deal] run 2 complete: score 525 -> 550, limit 5250.0 USDC -> 5500.0 USDC
+[deal]
+[deal] === measured live metrics
+[deal]   deploy Deals + Credit              run  -:   2625205 gas, 0.0013126025 CTC
+[deal]   create primary deal                run  1:    259548 gas, 0.000129774 CTC
+[deal]   approve A                          run  1:     55437 gas, 0.000056872178113524 ETH
+[deal]   fund                               run  1:     59292 gas, 0.000065882326611492 ETH
+[deal]   approve B                          run  1:     55413 gas, 0.000058692364890525 ETH
+[deal]   fund (impostor)                    run  1:     51668 gas, 0.000056574083892016 ETH
+[deal]   submitAndApply (funding)           run  1:    332430 gas, 0.000166215 CTC, 4 roots
+[deal]   submitAndApply (impostor funding)  run  1:    251272 gas, 0.000125636 CTC, 1 roots
+[deal]   approve B                          run  1:     55437 gas, 0.000056416925644371 ETH
+[deal]   repay                              run  1:     59260 gas, 0.00006230228851702 ETH
+[deal]   submitAndApply (repayment)         run  1:    336504 gas, 0.000168252 CTC, 1 roots
+[deal]   create reserved second deal        run  1:    225348 gas, 0.000112674 CTC
+[deal]   create primary deal                run  2:    208248 gas, 0.000104124 CTC
+[deal]   approve A                          run  2:     55437 gas, 0.000059833254052911 ETH
+[deal]   fund                               run  2:     59280 gas, 0.00006282996151848 ETH
+[deal]   approve B                          run  2:     55413 gas, 0.000061303552955838 ETH
+[deal]   fund (impostor)                    run  2:     51656 gas, 0.000053063405997096 ETH
+[deal]   submitAndApply (funding)           run  2:    333774 gas, 0.000166887 CTC, 9 roots
+[deal]   submitAndApply (impostor funding)  run  2:    253512 gas, 0.000126756 CTC, 6 roots
+[deal]   approve B                          run  2:     55437 gas, 0.000052631675254542 ETH
+[deal]   repay                              run  2:     59248 gas, 0.00006210619994992 ETH
+[deal]   submitAndApply (repayment)         run  2:    339192 gas, 0.000169596 CTC, 9 roots
+[deal]   create reserved second deal        run  2:    208248 gas, 0.000104124 CTC
+[deal]   Sepolia total:    672978 gas, 0.000708508217397735 test ETH spent
+[deal]   Creditcoin total: 5373281 gas, 0.0026866405 test CTC spent
+[deal]   run 1 funding wait: 7m 1s
+[deal]   run 1 repayment wait: 7m 10s
+[deal]   run 1 wall time: 17m 12s
+[deal]   run 2 funding wait: 8m 44s
+[deal]   run 2 repayment wait: 9m 16s
+[deal]   run 2 wall time: 20m 46s
+[deal]   total scenario wall time: 38m 20s
+[deal] machine-readable run: data/live/s5-fresh-2026-08-20T05-30-18-335Z.json
+[deal] the full path held on live testnets: created, financed, repaid, closed, scored, and reserve exhaustion remained visible
+[deal] full console reference: data/live/s5-fresh-2026-08-20T05-30-18-335Z.log

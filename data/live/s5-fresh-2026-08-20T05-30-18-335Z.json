@@ -1,0 +1,512 @@
+{
+  "capturedAt": "2026-08-20T05:30:18.741Z",
+  "mode": "fresh",
+  "requestedRuns": 2,
+  "commandDurationMs": 2300461,
+  "chainKey": 1,
+  "gateway": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
+  "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  "deals": "0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485",
+  "credit": "0x13AEC440a6cA605974Af15a9ef5B77EBC1442480",
+  "investor": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6",
+  "borrower": "0x73eEb564d3DebFdc2baf3281f9645C0068E862DF",
+  "capacitiesAtStart": {
+    "balanceRuns": "207",
+    "reserveRuns": "4545"
+  },
+  "scoreBefore": 500,
+  "scoreAfter": 550,
+  "limitBefore": "5000000000",
+  "limitAfter": "5500000000",
+  "runs": [
+    {
+      "run": 1,
+      "primaryDealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+      "reservedDealId": "0x3fc766fc26efb07e89b3cfa556aedefa6a78c356a1439b62ab8df6f1d2ccd549",
+      "scoreBefore": 500,
+      "scoreAfter": 525,
+      "limitBefore": "5000000000",
+      "limitAfter": "5250000000",
+      "finalStatus": "PAID_ON_TIME",
+      "outcome": "PAID_ON_TIME",
+      "fundTx": "0x3733b95365055253f5e0ef559c277089cf44263f4a63117e477d60a66a697e65",
+      "impostorTx": "0x41254297b138ca2eeba654aeb8896b7359cc73024a77b0a96add2330674e85ec",
+      "repayTx": "0xd9e5a3d44330fade41e4b4a14a0fe32d2d1f086f3b5ef220f906ec0a9afe5953",
+      "waits": [
+        {
+          "label": "run 1 funding",
+          "targetHeight": 11526850,
+          "finalAttestedHeight": 11526850,
+          "durationMs": 420615
+        },
+        {
+          "label": "run 1 repayment",
+          "targetHeight": 11526890,
+          "finalAttestedHeight": 11526890,
+          "durationMs": 430497
+        }
+      ],
+      "snapshots": [
+        {
+          "label": "1.1 after primary create",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "0",
+          "score": 500,
+          "limit": "5000000000",
+          "available": "4998900000"
+        },
+        {
+          "label": "1.2 after source funding",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "0",
+          "score": 500,
+          "limit": "5000000000",
+          "available": "4998900000"
+        },
+        {
+          "label": "1.3 after source impostor funding",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "0",
+          "score": 500,
+          "limit": "5000000000",
+          "available": "4998900000"
+        },
+        {
+          "label": "1.5 after financing proof",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "FINANCED",
+          "fundedAmount": "1000000",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "0",
+          "exposure": "1100000",
+          "score": 500,
+          "limit": "5000000000",
+          "available": "4998900000"
+        },
+        {
+          "label": "1.5 after impostor proof",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "FINANCED",
+          "fundedAmount": "1000000",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "0",
+          "exposure": "1100000",
+          "score": 500,
+          "limit": "5000000000",
+          "available": "4998900000"
+        },
+        {
+          "label": "1.6 after source repayment",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "FINANCED",
+          "fundedAmount": "1000000",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "0",
+          "exposure": "1100000",
+          "score": 500,
+          "limit": "5000000000",
+          "available": "4998900000"
+        },
+        {
+          "label": "1.7 after repayment proof",
+          "dealId": "0xa105ca762ed86fc20612c77c653a1821a20fd7c27188d5c352930b2a78504770",
+          "status": "PAID_ON_TIME",
+          "fundedAmount": "1000000",
+          "repaidAmount": "1100000",
+          "onTimeRepaid": "1100000",
+          "outstanding": "0",
+          "reserved": "0",
+          "exposure": "0",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5250000000"
+        },
+        {
+          "label": "1.8 after second unfunded deal",
+          "dealId": "0x3fc766fc26efb07e89b3cfa556aedefa6a78c356a1439b62ab8df6f1d2ccd549",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "0",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5248900000"
+        }
+      ],
+      "durationMs": 1031517
+    },
+    {
+      "run": 2,
+      "primaryDealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+      "reservedDealId": "0x58a14b5295c78edf3cbbcacc137388e04423ff05be9e19e3ed02c99965d3002c",
+      "scoreBefore": 525,
+      "scoreAfter": 550,
+      "limitBefore": "5250000000",
+      "limitAfter": "5500000000",
+      "finalStatus": "PAID_ON_TIME",
+      "outcome": "PAID_ON_TIME",
+      "fundTx": "0xa792d0630b8c02baf400fa9d0db822977f265b8017be848e2d52b29f53a45a63",
+      "impostorTx": "0x692ceaa8642fb4e325e6cfd51f8fc6fc5376b6f8c8ecbda5982e92cafbc446d6",
+      "repayTx": "0x6b5f4cb2ad7ce4b9f08e775007fd6bdc6b05a462b43d0b2f1c24bfd637d77a53",
+      "waits": [
+        {
+          "label": "run 2 funding",
+          "targetHeight": 11526935,
+          "finalAttestedHeight": 11526940,
+          "durationMs": 523961
+        },
+        {
+          "label": "run 2 repayment",
+          "targetHeight": 11526982,
+          "finalAttestedHeight": 11526990,
+          "durationMs": 555519
+        }
+      ],
+      "snapshots": [
+        {
+          "label": "2.1 after primary create",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "2200000",
+          "exposure": "0",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5247800000"
+        },
+        {
+          "label": "2.2 after source funding",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "2200000",
+          "exposure": "0",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5247800000"
+        },
+        {
+          "label": "2.3 after source impostor funding",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "2200000",
+          "exposure": "0",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5247800000"
+        },
+        {
+          "label": "2.5 after financing proof",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "FINANCED",
+          "fundedAmount": "1000000",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "1100000",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5247800000"
+        },
+        {
+          "label": "2.5 after impostor proof",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "FINANCED",
+          "fundedAmount": "1000000",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "1100000",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5247800000"
+        },
+        {
+          "label": "2.6 after source repayment",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "FINANCED",
+          "fundedAmount": "1000000",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "1100000",
+          "exposure": "1100000",
+          "score": 525,
+          "limit": "5250000000",
+          "available": "5247800000"
+        },
+        {
+          "label": "2.7 after repayment proof",
+          "dealId": "0xba519aa077c3804b4fcaff6b00174f95c51d0b7d670bf6eb5c3cfacfd4c8a1a3",
+          "status": "PAID_ON_TIME",
+          "fundedAmount": "1000000",
+          "repaidAmount": "1100000",
+          "onTimeRepaid": "1100000",
+          "outstanding": "0",
+          "reserved": "1100000",
+          "exposure": "0",
+          "score": 550,
+          "limit": "5500000000",
+          "available": "5498900000"
+        },
+        {
+          "label": "2.8 after second unfunded deal",
+          "dealId": "0x58a14b5295c78edf3cbbcacc137388e04423ff05be9e19e3ed02c99965d3002c",
+          "status": "CREATED",
+          "fundedAmount": "0",
+          "repaidAmount": "0",
+          "onTimeRepaid": "0",
+          "outstanding": "1100000",
+          "reserved": "2200000",
+          "exposure": "0",
+          "score": 550,
+          "limit": "5500000000",
+          "available": "5497800000"
+        }
+      ],
+      "durationMs": 1246289
+    }
+  ],
+  "costs": [
+    {
+      "run": null,
+      "step": "deploy Deals + Credit",
+      "chain": "creditcoin",
+      "tx": "0xd5ed5e5bc8339c71e1196d432bedc6a0007f290fc4e6f6ea91dc49ed8335bfdf",
+      "gasUsed": "2625205",
+      "feeNative": "1312602500000000"
+    },
+    {
+      "run": 1,
+      "step": "create primary deal",
+      "chain": "creditcoin",
+      "tx": "0x318052eb6ea7e58a6e2a7419c53daed407284521d3426c58d663458e19234fe8",
+      "gasUsed": "259548",
+      "feeNative": "129774000000000"
+    },
+    {
+      "run": 1,
+      "step": "approve A",
+      "chain": "sepolia",
+      "tx": "0xba9706cbea55020a0e83bef800a211eb9718d77d1576511a2223e5423e09e837",
+      "gasUsed": "55437",
+      "feeNative": "56872178113524"
+    },
+    {
+      "run": 1,
+      "step": "fund",
+      "chain": "sepolia",
+      "tx": "0x3733b95365055253f5e0ef559c277089cf44263f4a63117e477d60a66a697e65",
+      "gasUsed": "59292",
+      "feeNative": "65882326611492"
+    },
+    {
+      "run": 1,
+      "step": "approve B",
+      "chain": "sepolia",
+      "tx": "0x9ea7934cc6d393f8d4b8eb7386bef11ec9185ecba2d31b9412fd4f33cd4f6a56",
+      "gasUsed": "55413",
+      "feeNative": "58692364890525"
+    },
+    {
+      "run": 1,
+      "step": "fund (impostor)",
+      "chain": "sepolia",
+      "tx": "0x41254297b138ca2eeba654aeb8896b7359cc73024a77b0a96add2330674e85ec",
+      "gasUsed": "51668",
+      "feeNative": "56574083892016"
+    },
+    {
+      "run": 1,
+      "step": "submitAndApply (funding)",
+      "chain": "creditcoin",
+      "tx": "0xfd3f4eaab237dd6ed269a6574cb391fe9975aadf9108933406b36a602078af7a",
+      "gasUsed": "332430",
+      "feeNative": "166215000000000",
+      "continuityRoots": 4
+    },
+    {
+      "run": 1,
+      "step": "submitAndApply (impostor funding)",
+      "chain": "creditcoin",
+      "tx": "0xfb1f4aecc37d38a51ea361bdf192d5ff483148f2fee22c11c6df27139e095272",
+      "gasUsed": "251272",
+      "feeNative": "125636000000000",
+      "continuityRoots": 1
+    },
+    {
+      "run": 1,
+      "step": "approve B",
+      "chain": "sepolia",
+      "tx": "0x1061b659a5ed98714d6032ef527a8596a467acdc2509e23cae9b800858abc00c",
+      "gasUsed": "55437",
+      "feeNative": "56416925644371"
+    },
+    {
+      "run": 1,
+      "step": "repay",
+      "chain": "sepolia",
+      "tx": "0xd9e5a3d44330fade41e4b4a14a0fe32d2d1f086f3b5ef220f906ec0a9afe5953",
+      "gasUsed": "59260",
+      "feeNative": "62302288517020"
+    },
+    {
+      "run": 1,
+      "step": "submitAndApply (repayment)",
+      "chain": "creditcoin",
+      "tx": "0x288e3877c6b5dc82351f93858e908dfbf4de325f6df9f0e4adca8341dac5c394",
+      "gasUsed": "336504",
+      "feeNative": "168252000000000",
+      "continuityRoots": 1
+    },
+    {
+      "run": 1,
+      "step": "create reserved second deal",
+      "chain": "creditcoin",
+      "tx": "0x5a088a3ccde14f87457cfa6c84c2d00282fc9886922cf4fdf05390ac851bf15b",
+      "gasUsed": "225348",
+      "feeNative": "112674000000000"
+    },
+    {
+      "run": 2,
+      "step": "create primary deal",
+      "chain": "creditcoin",
+      "tx": "0xef5121f50a99188599a8723588ecb917b16936ad14f840cd28545ff684770759",
+      "gasUsed": "208248",
+      "feeNative": "104124000000000"
+    },
+    {
+      "run": 2,
+      "step": "approve A",
+      "chain": "sepolia",
+      "tx": "0x172c4d1ef7dcd50877f26be6dd82d9c98cd702eecf000528cb3b965ca529438a",
+      "gasUsed": "55437",
+      "feeNative": "59833254052911"
+    },
+    {
+      "run": 2,
+      "step": "fund",
+      "chain": "sepolia",
+      "tx": "0xa792d0630b8c02baf400fa9d0db822977f265b8017be848e2d52b29f53a45a63",
+      "gasUsed": "59280",
+      "feeNative": "62829961518480"
+    },
+    {
+      "run": 2,
+      "step": "approve B",
+      "chain": "sepolia",
+      "tx": "0x363fa4c65bb4bf0d790135c1ecf51c079442c84f03f1fd6721ffd19b46cf848f",
+      "gasUsed": "55413",
+      "feeNative": "61303552955838"
+    },
+    {
+      "run": 2,
+      "step": "fund (impostor)",
+      "chain": "sepolia",
+      "tx": "0x692ceaa8642fb4e325e6cfd51f8fc6fc5376b6f8c8ecbda5982e92cafbc446d6",
+      "gasUsed": "51656",
+      "feeNative": "53063405997096"
+    },
+    {
+      "run": 2,
+      "step": "submitAndApply (funding)",
+      "chain": "creditcoin",
+      "tx": "0x9a34472c1c59544a8d2c42102fc66cd51c54f2ad82943a6a1accddf6bf4eabe5",
+      "gasUsed": "333774",
+      "feeNative": "166887000000000",
+      "continuityRoots": 9
+    },
+    {
+      "run": 2,
+      "step": "submitAndApply (impostor funding)",
+      "chain": "creditcoin",
+      "tx": "0xd8890b090a4efc704280172535d27a18142eda92aec55ef275de4661cb6b51ed",
+      "gasUsed": "253512",
+      "feeNative": "126756000000000",
+      "continuityRoots": 6
+    },
+    {
+      "run": 2,
+      "step": "approve B",
+      "chain": "sepolia",
+      "tx": "0xa504127a8046f04ef40f2930cae4f6c0e84bc79cc7367c807d84c51e6831d2a4",
+      "gasUsed": "55437",
+      "feeNative": "52631675254542"
+    },
+    {
+      "run": 2,
+      "step": "repay",
+      "chain": "sepolia",
+      "tx": "0x6b5f4cb2ad7ce4b9f08e775007fd6bdc6b05a462b43d0b2f1c24bfd637d77a53",
+      "gasUsed": "59248",
+      "feeNative": "62106199949920"
+    },
+    {
+      "run": 2,
+      "step": "submitAndApply (repayment)",
+      "chain": "creditcoin",
+      "tx": "0x4f3a9dc210076b4c3aa2f2b6353fadb6528ea756d6433dfd76c4e83cdff60ee5",
+      "gasUsed": "339192",
+      "feeNative": "169596000000000",
+      "continuityRoots": 9
+    },
+    {
+      "run": 2,
+      "step": "create reserved second deal",
+      "chain": "creditcoin",
+      "tx": "0xf735c8daccfb530408c6c4692078d28a8386a6ffb7c1087394a6c295ccb46e42",
+      "gasUsed": "208248",
+      "feeNative": "104124000000000"
+    }
+  ],
+  "totals": {
+    "sepolia": {
+      "gasUsed": "672978",
+      "feeNative": "708508217397735"
+    },
+    "creditcoin": {
+      "gasUsed": "5373281",
+      "feeNative": "2686640500000000"
+    }
+  },
+  "problems": []
+}
