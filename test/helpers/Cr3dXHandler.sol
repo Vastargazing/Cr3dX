@@ -92,9 +92,13 @@ contract Cr3dXHandler is Test {
     // actions
     // ------------------------------------------------------------------
 
-    function createDeal(uint256 borrowerSeed, uint256 investorSeed, uint256 fundingSeed, uint256 faceSeed, uint256 dueSeed)
-        external
-    {
+    function createDeal(
+        uint256 borrowerSeed,
+        uint256 investorSeed,
+        uint256 fundingSeed,
+        uint256 faceSeed,
+        uint256 dueSeed
+    ) external {
         address borrower = borrowers[borrowerSeed % 3];
         address investor = investors[investorSeed % 3];
         uint256 faceValue = bound(faceSeed, 1, 2_000_000_000);
@@ -155,8 +159,9 @@ contract Cr3dXHandler is Test {
         uint256 amount = bound(amountSeed, 1, 3_000_000_000);
         uint64 height = uint64(bound(heightSeed, START_HEIGHT - 10_000, START_HEIGHT + 30_000));
 
-        bytes32 evidenceId =
-            _record(GateLog.only(GateLog.repayment(gateway, dealId, payer, recipient, amount, _nonce++)), height);
+        bytes32 evidenceId = _record(
+            GateLog.only(GateLog.repayment(gateway, dealId, payer, recipient, amount, _nonce++)), height
+        );
 
         (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.applyEvidence(evidenceId);
         _account(evidenceId, dealId, state, reason, 0, amount, height <= deal.dueBlock ? amount : 0);
@@ -178,7 +183,9 @@ contract Cr3dXHandler is Test {
             evidence.kind == Cr3dXVerifier.EvidenceKind.FUNDING ? evidence.amount : 0,
             evidence.kind == Cr3dXVerifier.EvidenceKind.REPAYMENT ? evidence.amount : 0,
             evidence.kind == Cr3dXVerifier.EvidenceKind.REPAYMENT
-                && evidence.blockHeight <= deals.getDeal(evidence.dealId).dueBlock ? evidence.amount : 0
+                && evidence.blockHeight <= deals.getDeal(evidence.dealId).dueBlock
+                ? evidence.amount
+                : 0
         );
     }
 
@@ -206,7 +213,8 @@ contract Cr3dXHandler is Test {
     // ------------------------------------------------------------------
 
     function _record(ProvenLog[] memory logs, uint64 height) private returns (bytes32 evidenceId) {
-        bytes32[] memory ids = verifier.submitEvidence(height, BlobBuilder.buildSuccessful(logs), proof, continuity);
+        bytes32[] memory ids =
+            verifier.submitEvidence(height, BlobBuilder.buildSuccessful(logs), proof, continuity);
         evidenceIds.push(ids[0]);
         return ids[0];
     }
@@ -222,7 +230,7 @@ contract Cr3dXHandler is Test {
         uint256 onTime
     ) private {
         if (state == Cr3dXDeals.EvidenceState.REJECTED_PERMANENT) {
-            // INV-19: a permanent refusal always names one of the three reasons.
+            // INV-19: a permanent refusal always names a current permanent reason.
             assertTrue(reason != Cr3dXDeals.RejectionReason.NONE, "a rejection without a reason");
             rejectedCount++; // observations, not a quantity any invariant asserts on
 

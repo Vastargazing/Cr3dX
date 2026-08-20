@@ -128,17 +128,18 @@ contract Cr3dXVerifier is ICr3dXGatewayEvents {
     ///      submitting it as evidence that money moved.
     error SourceTransactionFailed(uint64 height, uint64 txIndex);
 
-    /// @notice The call verified, but produced no evidence at all.
-    /// @dev Deliberately a revert. A submission that succeeds while recording
-    ///      nothing is a lie by omission: the caller paid gas, got a success, and
-    ///      has no way to tell that nothing happened. Applied per call, not per
-    ///      transaction: inside a batch an individual transaction may legitimately
-    ///      carry none of our events, and failing the whole batch over that would
-    ///      be gratuitous.
+    /// @notice A verified source transaction produced no evidence.
+    /// @dev Deliberately a revert, including for each transaction inside a
+    ///      batch. A submission that succeeds while one of the transactions
+    ///      records nothing is a lie by omission: the caller paid to submit that
+    ///      transaction and got no fact for it.
     error NoRelevantEvidence();
 
     /// @notice This exact fact has already been recorded.
     error EvidenceAlreadyRecorded(bytes32 evidenceId);
+
+    /// @notice No verified fact exists under this identifier.
+    error UnknownEvidence(bytes32 evidenceId);
 
     /// @notice Batch size outside `1 ..= 10`.
     /// @dev Ten is the precompile's own limit, confirmed against the live
@@ -199,7 +200,6 @@ contract Cr3dXVerifier is ICr3dXGatewayEvents {
         Attestcoin.BLOCK_PROVER.verify(chainKey, height, encodedTx, merkleProof, continuityProof);
 
         ids = _recordTransaction(height, encodedTx, merkleProof);
-        if (ids.length == 0) revert NoRelevantEvidence();
     }
 
     /// @notice Proves up to ten source transactions against one continuity proof.
@@ -232,10 +232,6 @@ contract Cr3dXVerifier is ICr3dXGatewayEvents {
             perTransaction[i] = _recordTransaction(heights[i], encodedTxs[i], merkleProofs[i]);
             total += perTransaction[i].length;
         }
-        // A batch is allowed to contain transactions with none of our events. It
-        // is not allowed to contain nothing but those.
-        if (total == 0) revert NoRelevantEvidence();
-
         ids = new bytes32[](total);
         uint256 k;
         for (uint256 i = 0; i < n; i++) {
@@ -250,7 +246,9 @@ contract Cr3dXVerifier is ICr3dXGatewayEvents {
     /// @dev The public mapping getter flattens the struct into a tuple, which the
     ///      registry would then have to reassemble. This is the shape S4 wants.
     function getEvidence(bytes32 evidenceId) external view returns (VerifiedEvidence memory) {
-        return evidence[evidenceId];
+        VerifiedEvidence memory result = evidence[evidenceId];
+        if (!result.recorded) revert UnknownEvidence(evidenceId);
+        return result;
     }
 
     /// @notice Identifier of a fact, computed the same way this contract computes it.
@@ -299,6 +297,8 @@ contract Cr3dXVerifier is ICr3dXGatewayEvents {
             (bool matched, bytes32 evidenceId) = _recordFromLog(logs[i], height, txIndex, funding, repayment);
             if (matched) ids[found++] = evidenceId;
         }
+
+        if (found == 0) revert NoRelevantEvidence();
 
         // Shrink to what was actually found. The tail was allocated, never written.
         assembly ("memory-safe") {

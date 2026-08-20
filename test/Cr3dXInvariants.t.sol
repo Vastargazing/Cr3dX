@@ -42,11 +42,15 @@ contract Cr3dXInvariantsTest is Cr3dXHarness {
         uint256 closed;
         for (uint256 i = 0; i < handler.dealCount(); i++) {
             Cr3dXDeals.DealStatus status = deals.getDeal(handler.dealIds(i)).status;
-            if (status == Cr3dXDeals.DealStatus.FINANCED) financed++;
-            else if (status == Cr3dXDeals.DealStatus.DEFAULTED) defaulted++;
-            else if (
+            if (status == Cr3dXDeals.DealStatus.FINANCED) {
+                financed++;
+            } else if (status == Cr3dXDeals.DealStatus.DEFAULTED) {
+                defaulted++;
+            } else if (
                 status == Cr3dXDeals.DealStatus.PAID_LATE || status == Cr3dXDeals.DealStatus.PAID_ON_TIME
-            ) closed++;
+            ) {
+                closed++;
+            }
         }
         console2.log("deals", handler.dealCount());
         console2.log("applied", handler.appliedCount());
@@ -66,8 +70,10 @@ contract Cr3dXInvariantsTest is Cr3dXHarness {
                 bytes32 dealId = handler.dealIds(i);
                 Cr3dXDeals.Deal memory deal = deals.getDeal(dealId);
                 if (deal.borrower != borrower) continue;
-                if (deal.status == Cr3dXDeals.DealStatus.FINANCED || deal.status == Cr3dXDeals.DealStatus.DEFAULTED)
-                {
+                if (
+                    deal.status == Cr3dXDeals.DealStatus.FINANCED
+                        || deal.status == Cr3dXDeals.DealStatus.DEFAULTED
+                ) {
                     expected += deals.outstandingOf(dealId);
                 }
             }
@@ -125,14 +131,18 @@ contract Cr3dXInvariantsTest is Cr3dXHarness {
                 assertEq(uint8(outcome), uint8(Result.PAID_LATE), "paid late without the outcome");
             } else {
                 assertEq(uint8(deal.status), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "unknown status");
-                assertGe(deal.onTimeRepaid, deal.faceValue, "paid on time without an on-time total covering it");
+                assertGe(
+                    deal.onTimeRepaid, deal.faceValue, "paid on time without an on-time total covering it"
+                );
                 assertEq(uint8(outcome), uint8(Result.PAID_ON_TIME), "paid on time without the outcome");
             }
 
             // INV-12 the other way round: an on-time total that covers the face
             // value is exactly what PAID_ON_TIME means.
             if (deal.onTimeRepaid >= deal.faceValue) {
-                assertEq(uint8(deal.status), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "on time but not closed");
+                assertEq(
+                    uint8(deal.status), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "on time but not closed"
+                );
             }
             assertLe(deal.onTimeRepaid, deal.repaidAmount, "on-time total above the total");
         }
@@ -157,7 +167,9 @@ contract Cr3dXInvariantsTest is Cr3dXHarness {
             Cr3dXDeals.Deal memory deal = deals.getDeal(dealId);
             uint256 outstanding = deals.outstandingOf(dealId);
             assertLe(outstanding, deal.faceValue, "outstanding above the face value");
-            if (deal.repaidAmount >= deal.faceValue) assertEq(outstanding, 0, "overpayment left debt behind");
+            if (deal.repaidAmount >= deal.faceValue) {
+                assertEq(outstanding, 0, "overpayment left debt behind");
+            }
         }
     }
 

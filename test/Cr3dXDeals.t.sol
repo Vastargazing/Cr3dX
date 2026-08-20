@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import {Vm} from "forge-std/Vm.sol";
 import {Cr3dXCredit, Result} from "../contracts/Cr3dXCredit.sol";
 import {Cr3dXDeals} from "../contracts/Cr3dXDeals.sol";
 import {Cr3dXVerifier} from "../contracts/Cr3dXVerifier.sol";
+import {IBlockProver} from "../contracts/interfaces/IBlockProver.sol";
 import {ProvenLog} from "../contracts/libraries/ProvenTransaction.sol";
+import {BlobBuilder} from "./helpers/BlobBuilder.sol";
 import {Cr3dXHarness} from "./helpers/Cr3dXHarness.sol";
 import {GateLog} from "./helpers/GateLog.sol";
 
@@ -139,14 +142,16 @@ contract Cr3dXDealsTest is Cr3dXHarness {
     ///      point: the money already moved on Sepolia, so refusing it here would
     ///      destroy it. The deal becomes an immediate default candidate instead.
     function test_fundingAnOverdueDealIsApplied() public {
-        bytes32 dealId = _createDeal(borrower, investor, FUNDING, FACE_VALUE, 1_000);
         _setAttestedHeight(1_000 + GRACE_PERIOD + 1);
+        bytes32 dealId = _createDeal(borrower, investor, FUNDING, FACE_VALUE, 1_000);
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.CREATED), "past-due creation is allowed");
 
         _fundAndApply(dealId, investor, borrower, FUNDING, 2_000);
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.FINANCED));
 
         deals.markDefaulted(dealId);
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.DEFAULTED));
+        assertEq(credit.recordOf(dealId).closedAtBlock, 1_000 + GRACE_PERIOD + 1);
     }
 
     function test_overpaidFundingIsKeptAndTheDealIsFinancedOnce() public {
@@ -161,7 +166,8 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         bytes32 dealId = _deal();
         bytes32 evidenceId = _fundAndApply(dealId, stranger, borrower, FUNDING, ON_TIME_HEIGHT);
 
-        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.evidenceStateOf(evidenceId);
+        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) =
+            deals.evidenceStateOf(evidenceId);
         assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
         assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_INVESTOR));
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.CREATED), "the deal is untouched");
@@ -172,7 +178,21 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         bytes32 dealId = _deal();
         bytes32 evidenceId = _fundAndApply(dealId, investor, stranger, FUNDING, ON_TIME_HEIGHT);
 
-        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.evidenceStateOf(evidenceId);
+        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) =
+            deals.evidenceStateOf(evidenceId);
+        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
+        assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT));
+    }
+
+    /// @notice Recipient mismatch wins when both immutable fields are wrong.
+    /// @dev Kills an implementation that checks the investor first and exposes
+    ///      `WRONG_INVESTOR` for the same canonical fact.
+    function test_wrongRecipientHasPriorityOverWrongInvestor() public {
+        bytes32 dealId = _deal();
+        bytes32 evidenceId = _fundAndApply(dealId, stranger, stranger, FUNDING, ON_TIME_HEIGHT);
+
+        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) =
+            deals.evidenceStateOf(evidenceId);
         assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
         assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT));
     }
@@ -188,7 +208,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
 
         bytes32 second = _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
         (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.evidenceStateOf(second);
-        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.APPLIED), "a surplus payment is still a payment");
+        assertEq(
+            uint8(state), uint8(Cr3dXDeals.EvidenceState.APPLIED), "a surplus payment is still a payment"
+        );
         assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.NONE));
 
         assertEq(deals.getDeal(dealId).fundedAmount, FUNDING * 2, "the second funding is counted");
@@ -296,11 +318,21 @@ contract Cr3dXDealsTest is Cr3dXHarness {
 
         deals.applyEvidence(repayment);
         (Cr3dXDeals.EvidenceState state,) = deals.evidenceStateOf(repayment);
-        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING), "the deal is not financed yet");
+        assertEq(
+            uint8(state), uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING), "the deal is not financed yet"
+        );
         assertEq(deals.getDeal(dealId).repaidAmount, 0, "and nothing was applied to it");
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.CREATED), "no closure without financing");
 
         _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
+        (state,) = deals.evidenceStateOf(repayment);
+        assertEq(
+            uint8(state),
+            uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING),
+            "new funding must not auto-retry an older pending fact"
+        );
+        assertEq(deals.getDeal(dealId).repaidAmount, 0, "only explicit retry may apply the older fact");
+
         deals.applyEvidence(repayment);
 
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
@@ -338,7 +370,8 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
         bytes32 evidenceId = _repayAndApply(dealId, borrower, stranger, FACE_VALUE, ON_TIME_HEIGHT);
 
-        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.evidenceStateOf(evidenceId);
+        (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) =
+            deals.evidenceStateOf(evidenceId);
         assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
         assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_RECIPIENT));
         assertEq(deals.getDeal(dealId).repaidAmount, 0);
@@ -379,10 +412,16 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         bytes32 extra = _repayAndApply(dealId, borrower, investor, 7, LATE_HEIGHT);
 
         (Cr3dXDeals.EvidenceState state,) = deals.evidenceStateOf(extra);
-        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.APPLIED), "not ignored because the deal is closed");
+        assertEq(
+            uint8(state), uint8(Cr3dXDeals.EvidenceState.APPLIED), "not ignored because the deal is closed"
+        );
         assertEq(deals.getDeal(dealId).repaidAmount, FACE_VALUE + 7);
         assertEq(credit.reservedOf(borrower), reservedBefore, "the reserve is untouched");
-        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "and the outcome does not move down");
+        assertEq(
+            uint8(_status(dealId)),
+            uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME),
+            "and the outcome does not move down"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -395,10 +434,22 @@ contract Cr3dXDealsTest is Cr3dXHarness {
     ///      cross the threshold, the two orders gave different answers. The
     ///      outcome is now derived from the accumulated totals, so they agree.
     function test_inv20LateThenOnTimeMatchesOnTimeThenLate() public {
-        (uint256 repaidA, uint256 onTimeA, uint256 outstandingA, uint8 statusA, uint16 scoreA, uint256 exposureA) =
-            _twoFullRepayments(true);
-        (uint256 repaidB, uint256 onTimeB, uint256 outstandingB, uint8 statusB, uint16 scoreB, uint256 exposureB) =
-            _twoFullRepayments(false);
+        (
+            uint256 repaidA,
+            uint256 onTimeA,
+            uint256 outstandingA,
+            uint8 statusA,
+            uint16 scoreA,
+            uint256 exposureA
+        ) = _twoFullRepayments(true);
+        (
+            uint256 repaidB,
+            uint256 onTimeB,
+            uint256 outstandingB,
+            uint8 statusB,
+            uint16 scoreB,
+            uint256 exposureB
+        ) = _twoFullRepayments(false);
 
         assertEq(repaidA, repaidB, "repaidAmount");
         assertEq(onTimeA, onTimeB, "onTimeRepaid");
@@ -419,7 +470,14 @@ contract Cr3dXDealsTest is Cr3dXHarness {
     ///      two orders share no state at all.
     function _twoFullRepayments(bool lateFirst)
         private
-        returns (uint256 repaid, uint256 onTime, uint256 outstanding, uint8 status, uint16 score, uint256 exposure)
+        returns (
+            uint256 repaid,
+            uint256 onTime,
+            uint256 outstanding,
+            uint8 status,
+            uint16 score,
+            uint256 exposure
+        )
     {
         _deployCr3dX();
         bytes32 dealId = _deal();
@@ -529,7 +587,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         bytes32 latePartial = _recordRepayment(dealA, borrower, investor, FACE_VALUE / 3, LATE_HEIGHT);
         bytes32 onTimeFull = _recordRepayment(dealA, borrower, investor, FACE_VALUE, ON_TIME_HEIGHT);
         deals.applyEvidence(latePartial);
-        assertEq(uint8(_status(dealA)), uint8(Cr3dXDeals.DealStatus.FINANCED), "a third of it is not a closure");
+        assertEq(
+            uint8(_status(dealA)), uint8(Cr3dXDeals.DealStatus.FINANCED), "a third of it is not a closure"
+        );
         deals.applyEvidence(onTimeFull);
         assertEq(uint8(_status(dealA)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
 
@@ -541,7 +601,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         deals.applyEvidence(onTimeFull2);
         assertEq(uint8(_status(dealB)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
         deals.applyEvidence(latePartial2);
-        assertEq(uint8(_status(dealB)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "and it is not refined downward");
+        assertEq(
+            uint8(_status(dealB)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME), "and it is not refined downward"
+        );
     }
 
     /// @notice PAID_LATE is refined to PAID_ON_TIME, and the status moves with it.
@@ -558,7 +620,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         _repayAndApply(dealId, borrower, investor, FACE_VALUE, ON_TIME_HEIGHT);
 
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
-        assertEq(uint8(credit.outcomeOf(dealId)), uint8(Result.PAID_ON_TIME), "status and outcome move together");
+        assertEq(
+            uint8(credit.outcomeOf(dealId)), uint8(Result.PAID_ON_TIME), "status and outcome move together"
+        );
         assertEq(credit.scoreOf(borrower), 525, "the late count is decremented, not merely offset");
         Cr3dXCredit.Counters memory counters = credit.countersOf(borrower);
         assertEq(counters.paidLate, 0);
@@ -623,7 +687,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         _fundAndApply(onTime, investor, borrower, FUNDING, ON_TIME_HEIGHT);
         _repayAndApply(onTime, borrower, investor, FACE_VALUE, ON_TIME_HEIGHT);
         vm.expectRevert(
-            abi.encodeWithSelector(Cr3dXDeals.NotDefaultable.selector, onTime, Cr3dXDeals.DealStatus.PAID_ON_TIME)
+            abi.encodeWithSelector(
+                Cr3dXDeals.NotDefaultable.selector, onTime, Cr3dXDeals.DealStatus.PAID_ON_TIME
+            )
         );
         deals.markDefaulted(onTime);
 
@@ -649,7 +715,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         deals.markDefaulted(dealId);
 
         vm.expectRevert(
-            abi.encodeWithSelector(Cr3dXDeals.NotDefaultable.selector, dealId, Cr3dXDeals.DealStatus.DEFAULTED)
+            abi.encodeWithSelector(
+                Cr3dXDeals.NotDefaultable.selector, dealId, Cr3dXDeals.DealStatus.DEFAULTED
+            )
         );
         deals.markDefaulted(dealId);
         assertEq(credit.scoreOf(borrower), 300, "and the penalty is not applied twice");
@@ -695,6 +763,29 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         assertEq(credit.scoreOf(borrower), 525);
     }
 
+    /// @notice Partial repayment preserves DEFAULTED and its original stamp;
+    ///         full repayment refines both outcome and stamp.
+    /// @dev Kills a classifier that derives "no outcome" from partial totals
+    ///      and thereby erases the explicit default transition.
+    function test_partialRepaymentPreservesDefaultUntilFullRepayment() public {
+        bytes32 dealId = _deal();
+        _fundAndApply(dealId, investor, borrower, FUNDING, ON_TIME_HEIGHT);
+        _setAttestedHeight(DUE_BLOCK + GRACE_PERIOD + 1);
+        deals.markDefaulted(dealId);
+        uint64 defaultStamp = credit.recordOf(dealId).closedAtBlock;
+
+        _repayAndApply(dealId, borrower, investor, FACE_VALUE / 2, LATE_HEIGHT);
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.DEFAULTED));
+        assertEq(uint8(credit.outcomeOf(dealId)), uint8(Result.DEFAULTED));
+        assertEq(credit.recordOf(dealId).closedAtBlock, defaultStamp, "unchanged DEFAULTED keeps its stamp");
+
+        _setAttestedHeight(DUE_BLOCK + GRACE_PERIOD + 10);
+        _repayAndApply(dealId, borrower, investor, FACE_VALUE - (FACE_VALUE / 2), LATE_HEIGHT);
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_LATE));
+        assertEq(uint8(credit.outcomeOf(dealId)), uint8(Result.PAID_LATE));
+        assertEq(credit.recordOf(dealId).closedAtBlock, DUE_BLOCK + GRACE_PERIOD + 10);
+    }
+
     /// @notice Exposure above the limit does not overflow anything.
     /// @dev Mandatory case from section 9. A default cuts the limit while the
     ///      debt stays, so used credit legitimately exceeds it.
@@ -718,6 +809,158 @@ contract Cr3dXDealsTest is Cr3dXHarness {
     // ------------------------------------------------------------------
     // evidence handling
     // ------------------------------------------------------------------
+
+    /// @notice A repayment listed before its funding in one proven transaction
+    ///         is still applied after the funding phase.
+    /// @dev Kills the former one-pass implementation, which left the repayment
+    ///      pending and stopped with a merely financed deal.
+    function test_submitAndApplyUsesFundingThenRepayment() public {
+        bytes32 dealId = _deal();
+        ProvenLog[] memory logs = new ProvenLog[](2);
+        logs[0] =
+            GateLog.repayment(address(gateway), dealId, borrower, investor, FACE_VALUE, nextEventNonce++);
+        logs[1] = GateLog.funding(address(gateway), dealId, investor, borrower, FUNDING, nextEventNonce++);
+
+        bytes32[] memory ids = _submitAndApply(logs, ON_TIME_HEIGHT);
+
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
+        assertEq(uint8(credit.outcomeOf(dealId)), uint8(Result.PAID_ON_TIME));
+        assertEq(deals.getDeal(dealId).repaidAmount, FACE_VALUE);
+        for (uint256 i = 0; i < ids.length; i++) {
+            (Cr3dXDeals.EvidenceState state,) = deals.evidenceStateOf(ids[i]);
+            assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.APPLIED));
+        }
+    }
+
+    /// @notice The batch path uses the same two stable phases as the single path.
+    /// @dev Kills a partial fix that changes `submitAndApply` but leaves
+    ///      `submitAndApplyBatch` in returned-identifier order.
+    function test_submitAndApplyBatchUsesFundingThenRepayment() public {
+        bytes32 dealId = _deal();
+        ProvenLog[] memory repayment = GateLog.only(
+            GateLog.repayment(address(gateway), dealId, borrower, investor, FACE_VALUE, nextEventNonce++)
+        );
+        ProvenLog[] memory funding = GateLog.only(
+            GateLog.funding(address(gateway), dealId, investor, borrower, FUNDING, nextEventNonce++)
+        );
+
+        uint64[] memory heights = new uint64[](2);
+        heights[0] = ON_TIME_HEIGHT;
+        heights[1] = ON_TIME_HEIGHT + 1;
+        bytes[] memory blobs = new bytes[](2);
+        blobs[0] = BlobBuilder.buildSuccessful(repayment);
+        blobs[1] = BlobBuilder.buildSuccessful(funding);
+        IBlockProver.MerkleProof[] memory proofs = new IBlockProver.MerkleProof[](2);
+        proofs[0] = proof;
+        proofs[1] = proof;
+
+        bytes32[] memory ids = deals.submitAndApplyBatch(heights, blobs, proofs, continuity);
+
+        assertEq(ids.length, 2);
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
+        assertEq(uint8(credit.outcomeOf(dealId)), uint8(Result.PAID_ON_TIME));
+        assertEq(credit.exposureOf(borrower), 0);
+    }
+
+    /// @notice Each phase preserves verifier return order.
+    /// @dev Kills implementations that group the kinds but reverse or otherwise
+    ///      reorder facts within a phase; cumulative event totals expose it.
+    function test_submitAndApplyKeepsStableOrderInsideBothPhases() public {
+        bytes32 dealId = _deal();
+        ProvenLog[] memory logs = new ProvenLog[](4);
+        logs[0] =
+            GateLog.repayment(address(gateway), dealId, borrower, investor, 300_000_000, nextEventNonce++);
+        logs[1] = GateLog.funding(address(gateway), dealId, investor, borrower, 400_000_000, nextEventNonce++);
+        logs[2] =
+            GateLog.repayment(address(gateway), dealId, borrower, investor, 800_000_000, nextEventNonce++);
+        logs[3] = GateLog.funding(address(gateway), dealId, investor, borrower, 600_000_000, nextEventNonce++);
+
+        vm.recordLogs();
+        bytes32[] memory ids = _submitAndApply(logs, ON_TIME_HEIGHT);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        uint256 applied;
+        for (uint256 i = 0; i < entries.length; i++) {
+            if (entries[i].emitter != address(deals) || entries[i].topics.length == 0) continue;
+            bytes32 topic = entries[i].topics[0];
+            if (topic == Cr3dXDeals.FundingApplied.selector) {
+                assertLt(applied, 2, "funding must precede every repayment");
+                bytes32 expectedId = applied == 0 ? ids[1] : ids[3];
+                uint256 expectedAmount = applied == 0 ? 400_000_000 : 600_000_000;
+                uint256 expectedTotal = applied == 0 ? 400_000_000 : FUNDING;
+                (uint256 amount, uint256 total) = abi.decode(entries[i].data, (uint256, uint256));
+                assertEq(entries[i].topics[2], expectedId, "funding order");
+                assertEq(amount, expectedAmount, "funding amount order");
+                assertEq(total, expectedTotal, "funding cumulative order");
+                applied++;
+            } else if (topic == Cr3dXDeals.RepaymentApplied.selector) {
+                assertGe(applied, 2, "repayment ran before funding phase ended");
+                bytes32 expectedId = applied == 2 ? ids[0] : ids[2];
+                uint256 expectedAmount = applied == 2 ? 300_000_000 : 800_000_000;
+                uint256 expectedTotal = applied == 2 ? 300_000_000 : FACE_VALUE;
+                (uint256 amount, uint256 repaid, uint256 onTime) =
+                    abi.decode(entries[i].data, (uint256, uint256, uint256));
+                assertEq(entries[i].topics[2], expectedId, "repayment order");
+                assertEq(amount, expectedAmount, "repayment amount order");
+                assertEq(repaid, expectedTotal, "repayment cumulative order");
+                assertEq(onTime, expectedTotal, "on-time cumulative order");
+                applied++;
+            }
+        }
+        assertEq(applied, 4, "all four application events were observed");
+        assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.PAID_ON_TIME));
+    }
+
+    /// @notice A duplicate inside one submitted transaction is atomic across
+    ///         verifier, registry and credit state.
+    function test_duplicateInsideOneSubmitAndApplyIsAtomic() public {
+        bytes32 dealId = _deal();
+        uint256 nonce = nextEventNonce++;
+        ProvenLog memory duplicate =
+            GateLog.funding(address(gateway), dealId, investor, borrower, FUNDING, nonce);
+        ProvenLog[] memory logs = new ProvenLog[](2);
+        logs[0] = duplicate;
+        logs[1] = duplicate;
+        bytes32 evidenceId =
+            verifier.evidenceIdOf(ON_TIME_HEIGHT, 1, Cr3dXVerifier.EvidenceKind.FUNDING, nonce);
+
+        vm.expectRevert(abi.encodeWithSelector(Cr3dXVerifier.EvidenceAlreadyRecorded.selector, evidenceId));
+        _submitAndApply(logs, ON_TIME_HEIGHT);
+
+        assertFalse(verifier.seen(evidenceId));
+        assertEq(deals.getDeal(dealId).fundedAmount, 0);
+        assertEq(credit.reservedOf(borrower), FACE_VALUE);
+        assertEq(credit.exposureOf(borrower), 0);
+    }
+
+    /// @notice A duplicate across batch elements is equally atomic before any
+    ///         application begins.
+    function test_duplicateInsideSubmitAndApplyBatchIsAtomic() public {
+        bytes32 dealId = _deal();
+        uint256 nonce = nextEventNonce++;
+        ProvenLog[] memory logs =
+            GateLog.only(GateLog.funding(address(gateway), dealId, investor, borrower, FUNDING, nonce));
+        bytes memory blob = BlobBuilder.buildSuccessful(logs);
+        uint64[] memory heights = new uint64[](2);
+        heights[0] = ON_TIME_HEIGHT;
+        heights[1] = ON_TIME_HEIGHT;
+        bytes[] memory blobs = new bytes[](2);
+        blobs[0] = blob;
+        blobs[1] = blob;
+        IBlockProver.MerkleProof[] memory proofs = new IBlockProver.MerkleProof[](2);
+        proofs[0] = proof;
+        proofs[1] = proof;
+        bytes32 evidenceId =
+            verifier.evidenceIdOf(ON_TIME_HEIGHT, 1, Cr3dXVerifier.EvidenceKind.FUNDING, nonce);
+
+        vm.expectRevert(abi.encodeWithSelector(Cr3dXVerifier.EvidenceAlreadyRecorded.selector, evidenceId));
+        deals.submitAndApplyBatch(heights, blobs, proofs, continuity);
+
+        assertFalse(verifier.seen(evidenceId));
+        assertEq(deals.getDeal(dealId).fundedAmount, 0);
+        assertEq(credit.reservedOf(borrower), FACE_VALUE);
+        assertEq(credit.exposureOf(borrower), 0);
+    }
 
     /// @notice One transaction carrying two gateway events produces two facts,
     ///         and both are applied.
@@ -773,7 +1016,9 @@ contract Cr3dXDealsTest is Cr3dXHarness {
 
         assertTrue(verifier.seen(evidenceId), "the verifier has the fact");
         (Cr3dXDeals.EvidenceState state,) = deals.evidenceStateOf(evidenceId);
-        assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING), "the registry has not seen it yet");
+        assertEq(
+            uint8(state), uint8(Cr3dXDeals.EvidenceState.VERIFIED_PENDING), "the registry has not seen it yet"
+        );
 
         deals.applyEvidence(evidenceId);
         assertEq(uint8(_status(dealId)), uint8(Cr3dXDeals.DealStatus.FINANCED));
@@ -785,7 +1030,8 @@ contract Cr3dXDealsTest is Cr3dXHarness {
         bytes32 evidenceId = _fundAndApply(dealId, stranger, borrower, FUNDING, ON_TIME_HEIGHT);
 
         for (uint256 i = 0; i < 3; i++) {
-            (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) = deals.applyEvidence(evidenceId);
+            (Cr3dXDeals.EvidenceState state, Cr3dXDeals.RejectionReason reason) =
+                deals.applyEvidence(evidenceId);
             assertEq(uint8(state), uint8(Cr3dXDeals.EvidenceState.REJECTED_PERMANENT));
             assertEq(uint8(reason), uint8(Cr3dXDeals.RejectionReason.WRONG_INVESTOR));
         }

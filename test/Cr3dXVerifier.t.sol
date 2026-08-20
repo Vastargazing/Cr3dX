@@ -137,7 +137,8 @@ contract Cr3dXVerifierTest is Test {
         bytes32 impostorId =
             verifier.evidenceIdOf(HEIGHT, TX_INDEX, Cr3dXVerifier.EvidenceKind.FUNDING, type(uint256).max);
         assertFalse(verifier.seen(impostorId), "the counterfeit must not have been recorded");
-        assertEq(verifier.getEvidence(impostorId).amount, 0, "and must have left no storage behind");
+        vm.expectRevert(abi.encodeWithSelector(Cr3dXVerifier.UnknownEvidence.selector, impostorId));
+        verifier.getEvidence(impostorId);
     }
 
     // ------------------------------------------------------------------
@@ -265,6 +266,28 @@ contract Cr3dXVerifierTest is Test {
         verifier.submitEvidence(HEIGHT, blob, proof, continuity);
     }
 
+    /// @notice Two logs that resolve to one identifier roll the whole call back.
+    /// @dev Kills an implementation that writes the first fact before reporting
+    ///      the duplicate and accidentally leaves that write behind.
+    function test_duplicateInsideOneTransactionIsAtomic() public {
+        ProvenLog[] memory logs = new ProvenLog[](2);
+        logs[0] = _fundingLog(DEAL, investor, borrower, FUNDING, 77);
+        logs[1] = _fundingLog(DEAL, investor, borrower, FUNDING, 77);
+        bytes32 id = verifier.evidenceIdOf(HEIGHT, TX_INDEX, Cr3dXVerifier.EvidenceKind.FUNDING, 77);
+
+        vm.expectRevert(abi.encodeWithSelector(Cr3dXVerifier.EvidenceAlreadyRecorded.selector, id));
+        verifier.submitEvidence(HEIGHT, BlobBuilder.buildSuccessful(logs), proof, continuity);
+
+        assertFalse(verifier.seen(id), "the first write must roll back with the duplicate");
+    }
+
+    /// @notice `getEvidence` distinguishes an absent fact from a zero-valued one.
+    function test_getEvidenceRejectsAnUnknownIdentifier() public {
+        bytes32 unknown = keccak256("unknown evidence");
+        vm.expectRevert(abi.encodeWithSelector(Cr3dXVerifier.UnknownEvidence.selector, unknown));
+        verifier.getEvidence(unknown);
+    }
+
     /// @notice The same event proven at a different height is a different fact.
     /// @dev Height is part of the identifier, so this cannot be used to smuggle a
     ///      duplicate past the replay check. It is here to pin the identifier's
@@ -366,24 +389,26 @@ contract Cr3dXVerifierTest is Test {
         }
     }
 
-    /// @notice A batch may contain transactions with none of our events.
-    /// @dev The empty-result rule applies to the call, not to each transaction.
-    ///      Failing a whole batch because one of its members was uninteresting
-    ///      would be gratuitous.
-    function test_batchToleratesTransactionsWithoutOurEvents() public {
+    /// @notice Every transaction in a batch must produce at least one fact.
+    /// @dev Kills the old call-wide check, which silently tolerated one empty
+    ///      transaction as long as another transaction produced evidence.
+    function test_batchRejectsAnyTransactionWithoutOurEvents() public {
         uint64[] memory heights = new uint64[](2);
         bytes[] memory blobs = new bytes[](2);
         IBlockProver.MerkleProof[] memory proofs = new IBlockProver.MerkleProof[](2);
 
         heights[0] = HEIGHT;
-        blobs[0] = _fixtureBlob("many-logs");
+        blobs[0] = _fundingBlob();
         proofs[0] = proof;
         heights[1] = HEIGHT + 1;
-        blobs[1] = _fundingBlob();
+        blobs[1] = _fixtureBlob("many-logs");
         proofs[1] = proof;
 
-        bytes32[] memory ids = verifier.submitEvidenceBatch(heights, blobs, proofs, continuity);
-        assertEq(ids.length, 1, "the uninteresting transaction is tolerated, the other is recorded");
+        vm.expectRevert(Cr3dXVerifier.NoRelevantEvidence.selector);
+        verifier.submitEvidenceBatch(heights, blobs, proofs, continuity);
+
+        bytes32 first = verifier.evidenceIdOf(HEIGHT, TX_INDEX, Cr3dXVerifier.EvidenceKind.FUNDING, 0);
+        assertFalse(verifier.seen(first), "the earlier write rolls back when a later transaction is empty");
     }
 
     /// @notice A batch where nothing at all matches is still a failed submission.

@@ -144,10 +144,18 @@ contract Cr3dXCreditTest is Test {
         bytes32 dealId = keccak256("a");
         credit.openDeal(dealId, borrower, 1);
         credit.recordOutcome(dealId, Result.PAID_ON_TIME);
+        uint64 firstStamp = credit.recordOf(dealId).closedAtBlock;
+
+        _chainInfo().setAttestedHeight(CHAIN_KEY, HEIGHT + 5_000);
         credit.recordOutcome(dealId, Result.PAID_ON_TIME);
 
         assertEq(credit.countersOf(borrower).paidOnTime, 1);
         assertEq(credit.scoreOf(borrower), 525);
+        assertEq(
+            credit.recordOf(dealId).closedAtBlock,
+            firstStamp,
+            "an unchanged outcome must not move its audit stamp"
+        );
     }
 
     function test_anOutcomeIsStampedWithTheAttestedSourceHeight() public {
@@ -245,9 +253,7 @@ contract Cr3dXCreditTest is Test {
 
     function test_openingBeyondTheAvailableLimitIsRefused() public {
         credit.openDeal(keccak256("a"), borrower, BASE_LIMIT);
-        vm.expectRevert(
-            abi.encodeWithSelector(Cr3dXCredit.ExceedsAvailableLimit.selector, borrower, 1, 0)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Cr3dXCredit.ExceedsAvailableLimit.selector, borrower, 1, 0));
         credit.openDeal(keccak256("b"), borrower, 1);
     }
 
