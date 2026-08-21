@@ -96,7 +96,6 @@ test("snapshot remains frozen across distinguishable live success then RPC failu
     readFile(resolve(uiRoot, "src/main.ts"), "utf8"),
   ]);
   const snapshotMarkup = html.match(/<article class="deal-terminal"[\s\S]+?<\/article>/)?.[0] ?? "";
-  const snapshotBefore = Buffer.from(snapshotMarkup);
   const liveValue: LiveState = {
     chainId: 102031,
     blockNumber: 9_999_999,
@@ -140,12 +139,11 @@ test("snapshot remains frozen across distinguishable live success then RPC failu
   assert.equal(afterFailure.lastSuccessful.value.blockNumber, 9_999_999);
   assert.equal(afterFailure.lastSuccessful.value.observedAt.toISOString(), "2026-08-21T12:34:56.000Z");
   assert.equal(afterFailure.error, "forced transport failure");
-  assert.deepEqual(Buffer.from(snapshotMarkup), snapshotBefore);
   assert.ok(rendered.some((state) => state.kind === "fresh"));
   assert.ok(rendered.some((state) => state.kind === "stale"));
 
   for (const immutableId of ["deal-status", "score-transition", "fold-limit", "fold-exposure", "fold-repaid", "fold-worker"]) {
-    assert.doesNotMatch(mainSource, new RegExp(`setText\\(["']${immutableId}["']`));
+    assert.doesNotMatch(mainSource, new RegExp(immutableId));
   }
   assert.match(snapshotMarkup, /Accepted snapshot/);
   assert.match(snapshotMarkup, /2026-08-21/);
@@ -269,6 +267,18 @@ test("product-review evidence and trust boundaries are explicit", async () => {
   assert.match(
     visibleText,
     /The credit outcome follows from those verified facts and the attested source height\./,
+  );
+  assert.match(
+    visibleText,
+    /Deterministic transitions — contract code and Phase B replay/,
+  );
+  assert.match(
+    visibleText,
+    /Worker reconciliation — recorded worker state, not the proof/,
+  );
+  assert.match(
+    visibleText,
+    /Runtime bytecode matched after masking immutable slots; constructor wiring was read back from chain\./,
   );
 });
 

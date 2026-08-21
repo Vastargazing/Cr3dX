@@ -326,8 +326,8 @@
               <ul>
                 <li><span>✓</span> Source transaction inclusion and success</li>
                 <li><span>✓</span> Configured Gateway event and source height</li>
-                <li><span>✓</span> Deterministic deal and credit transitions</li>
-                <li><span>✓</span> Permissionless worker reconciliation</li>
+                <li><span>✓</span> Deterministic transitions — contract code and Phase B replay</li>
+                <li><span>✓</span> Worker reconciliation — recorded worker state, not the proof</li>
               </ul>
             </article>
             <article class="integrity-list integrity-list--excluded">
@@ -354,7 +354,7 @@
             <div><dt>Deals · Creditcoin</dt><dd><a id="deployment-deals-link" href="#"><code>0x8f7B…A3cC</code> ↗</a></dd></div>
             <div><dt>Credit · Creditcoin</dt><dd><a id="deployment-credit-link" href="#"><code>0x4a66…05C8</code> ↗</a></dd></div>
           </dl>
-          <p class="deployment-note">Runtime bytecode and constructor wiring were read back from chain and matched to the v0.4.8 build artifacts.</p>
+          <p class="deployment-note">Runtime bytecode matched after masking immutable slots; constructor wiring was read back from chain.</p>
         </aside>
       </section>
     </main>

@@ -6,7 +6,7 @@
 
 ---
 
-## 2026-08-21 — read-only dashboard repair-pass завершён, commit запрещён до приёмки
+## 2026-08-21 — read-only dashboard принят и закоммичен
 
 На ветке `ui/read-only-dashboard` добавлена одна desktop-first vanilla
 TypeScript/Vite страница для объяснения уже принятой системы. Порядок страницы
@@ -26,8 +26,9 @@ observation показывает destination block, локальное врем�
 метку snapshot.
 
 Regression выполняет последовательность frozen snapshot -> отличающийся live
-success -> forced RPC failure. Он требует побайтно неизменный snapshot, сохранение
-старых successful block/time и состояние `STALE`. Убитый мутант — прежний
+success -> forced RPC failure. Он запрещает production `main.ts` любые ссылки на
+immutable snapshot IDs, требует сохранение старых successful block/time и состояние
+`STALE`. Убитый мутант — прежний
 `refreshLiveState()`, который перезаписывал snapshot-поля live значениями, а при
 ошибке возвращал только подпись `Snapshot`, не возвращая frozen значения.
 
@@ -62,8 +63,10 @@ Vite настроен с `base: "./"`. Production `index.html` содержит 
 
 Последовательно прошли `npm run typecheck`, `npm run ui:typecheck`,
 `npm run test:ui`, `npm run ui:build`; production build: HTML `18.30 kB`, CSS
-`31.26 kB`, JS `264.16 kB` до gzip. Forge и solc не запускались. Коммит и push не
-выполнялись: работа остановлена для повторной визуальной приёмки.
+`31.26 kB`, JS `264.16 kB` до gzip. Forge и solc не запускались. Визуальная
+приёмка пройдена; dashboard материализован коммитом
+`86e3b15fd8987324a842940b5e87880949c83dfb` на ветке
+`ui/read-only-dashboard`. Push и merge не выполнялись.
 
 ## 2026-08-21 — S6 live acceptance завершена на v0.4.8
 
