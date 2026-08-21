@@ -30,7 +30,12 @@
     "worker:bootstrap": "worker/launch.sh bootstrap",
     "worker:step": "worker/launch.sh step",
     "test:worker": "node --import tsx --test --test-concurrency=1 worker/*.test.ts",
-    "test:scripts": "node --import tsx --test --test-concurrency=1 scripts/lib/*.test.ts worker/*.test.ts"
+    "test:scripts": "node --import tsx --test --test-concurrency=1 scripts/lib/*.test.ts worker/*.test.ts",
+    "ui:dev": "vite ui",
+    "ui:build": "vite build ui",
+    "ui:preview": "vite preview ui",
+    "ui:typecheck": "tsc --project ui/tsconfig.json --noEmit",
+    "test:ui": "node --import tsx --test --test-concurrency=1 ui/test/*.test.ts"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",
@@ -42,6 +47,7 @@
     "@polkadot/util-crypto": "^13.2.3",
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^7.3.6"
   }
 }
