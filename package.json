@@ -26,7 +26,11 @@
     "s5:fresh": "node --import tsx scripts/deal-live.ts --mode fresh --runs 2",
     "s5:continue": "node --import tsx scripts/deal-live.ts --mode continue --runs 1",
     "s5:resume": "node --import tsx scripts/deal-live.ts --mode continue --resume-deal",
-    "test:scripts": "node --import tsx --test scripts/lib/*.test.ts"
+    "worker": "worker/launch.sh",
+    "worker:bootstrap": "worker/launch.sh bootstrap",
+    "worker:step": "worker/launch.sh step",
+    "test:worker": "node --import tsx --test --test-concurrency=1 worker/*.test.ts",
+    "test:scripts": "node --import tsx --test --test-concurrency=1 scripts/lib/*.test.ts worker/*.test.ts"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",

@@ -6,6 +6,307 @@
 
 ---
 
+## 2026-08-21 — S6 live acceptance завершена на v0.4.8
+
+Live продолжен только после adapter-fix коммита
+`d3ff6317540d6b18d91628418c8e8372d9a079ae`. Deployment не повторялся:
+использованы существующий Sepolia Gateway
+`0x11DD8a4c790939DEa8CED631dB27Afe54334a749` и замороженный v0.4.8 комплект
+Verifier `0xED64f6157408f211dda43649129EaC1F73161093`, Deals
+`0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC`, Credit
+`0x4a66732cA5B7f081585693332C79e636CE9c05C8`. Нормативная S6 spec,
+контракты и deployment ledger не менялись.
+
+Старые proof bytes для сохранённого repayment source hash
+`0xe90b91457786d4e89104e157c746b2d8ec8d91b9462321602c96591a6c2d72ec`
+не использовались. До подписи proof был запрошен заново. Ранний preflight
+сохранил не все поля, поэтому неизвестные значения ниже не восстановлены
+задним числом:
+
+| Наблюдение одного repayment | Старый preflight | Fresh preflight после fix |
+|---|---:|---:|
+| source/query height | 11534643 | 11534643 |
+| anchor type | не записан | attestation |
+| anchor height | не записан | 11534650 |
+| anchor digest | не записан | `0xb13a633af4c01dd3d691dcb87e48755583e95f283e0e33988c01afd2c8b82529` |
+| continuity roots | не записаны | 8 |
+| encoded transaction | не записан | 2080 B |
+| proof JSON | не записан | 5791 B |
+| `submitAndApply` calldata | не записана | 3140 B |
+| simulation | SUCCESS | SUCCESS |
+| gas estimate | 282203 | 282203 |
+
+Оценка gas не изменилась. Поскольку форма старого proof не была записана,
+никакая причина изменения или неизменности через elapsed time либо
+ретроспективно предполагаемую форму proof не заявляется. Proof-builder ответил
+`cached: true`, но это был новый HTTP-запрос перед подписью, а не повторное
+использование локально сохранённых bytes. Anchor digest и его тип сверялись
+через точный `ChainInfo.get_attestation_bounds`; последний элемент массива
+continuity roots не выдаётся за anchor digest.
+
+Repayment был намеренно подан до funding после approve
+`0x156d44824068be9c74682cc37a5cd76ee36c3023340bac5cce03397bc3dfd19e`
+в Sepolia-блоке 11534642. Worker подписал его
+`submitAndApply` exact envelope с nonce 0 и отправил ровно один раз:
+`0xa626556e0798a67d77b484896d10e662763d041c2e9ead2d0c4ad112f2955657`.
+Receipt `status = 1`, блок 5347503, gasUsed 260288, 8 roots, anchor attestation
+11534650 с digest `0xb13a633a…2529`. После двух последующих canonical
+destination blocks контролируемый restart атомарно заменил maximum-liability
+reservation на actual fee `0.000130144 CTC`; evidence осталось
+`VERIFIED_PENDING`, потому что сделка ещё была `CREATED`.
+
+Funding source tx
+`0x376bde8f88c3dfa9059356d63f6866dc0209a7796ec1cdc14e9fb2a5ba203abe`
+в блоке 11534796 (после approve
+`0xc4d94417b86c1ddf1021b9143bf65a6c6282b1643b5f331de431b37c8720c6ac`
+в блоке 11534795) был принят worker после достижения attested height 11534800.
+Read-only preflight: 5 roots, anchor attestation 11534800 с digest
+`0x1b47b11718ad1ae4ad133a45d7555a79cedb5b8a4e82d0017dcd2e6d2ac0d263`,
+proof JSON 5679 B, encoded transaction 2080 B, calldata 3108 B, simulation
+SUCCESS, estimate 364799 и final limit 437759. Exact envelope nonce 1 был
+отправлен один раз как
+`0xc740cf0ee69401817c32a310f6e2781ab63d125f7fc2bd299338cfe5fdc822ad`;
+receipt `status = 1`, блок 5347560, gasUsed 340382. Отдельный restart после
+глубины +2 записал actual fee `0.000170191 CTC` и удалил envelope.
+
+После funding production `dealView` прочитал status 2 и правильного
+designated investor. Repayment `applyEvidence` имел calldata 36 B, proof/roots/
+anchor `N/A`, simulation SUCCESS, estimate 315264 и final limit 378317. Exact
+envelope nonce 2 был отправлен один раз как
+`0xa0c24a107398af5c99cc8cfaab0ea50f4542caff45c34bc8f539afbfa55b13b6`;
+receipt `status = 1`, блок 5347573, gasUsed 292348. На глубине +2 ещё один
+restart атомарно записал actual fee `0.000146174 CTC`, удалил envelope и
+перевёл repayment evidence в `APPLIED`.
+
+Итог основной сделки совпал полностью: `PAID_ON_TIME`, fundedAmount 1000000,
+repaidAmount/onTimeRepaid 1100000, outstanding 0, exposure/reserve 0, score
+`500 -> 525`, limit и available limit `5000000000 -> 5250000000`. Funding и
+repayment evidence имеют `APPLIED/NONE`. Три worker-операции израсходовали
+`0.000446509 CTC`; остаток signer — `0.019553491 CTC`, что выше reserve
+`0.005 CTC`, а фактический 24h расход значительно ниже budget `0.01 CTC`.
+
+Обязательный external-submission race выполнен вторым кошельком. После core
+close allowance на 1 base unit создан approve-транзакцией
+`0x08a09ccf48510dbf8423ea8347a91b5febd9d7e320abd988ae8e111c8ad52831`
+в блоке 11534887, затем создан surplus funding на 1 base unit, source tx
+`0x98c724cf613246c821b1a36acf765dedadc88fce36b9857ea86cf57d01a7e1ea`,
+блок 11534891, evidence ID
+`0xb7bf02c15afd864f4274428e9be186344e0191e616bc45b25ec2fab4d709d4d5`.
+Worker сначала принял task в `WAITING_ATTESTATION`, затем после attestation
+выполнил read-only production preflight: 10 roots, anchor attestation 11534900
+с digest `0x640da336bc360324380245375a1bfea8346d894d71b2d3f50db2acd94f1d29b4`,
+proof JSON 5928 B, encoded transaction 2080 B, calldata 3204 B, simulation
+SUCCESS, estimate 288151. До worker broadcast второй кошелёк отправил свежий
+proof напрямую транзакцией
+`0x8d859033ecaec13d7ebb188f8673673af0d13b989202997d613bee38f78840c2`:
+`status = 1`, блок 5347633, gasUsed 266056, те же 10 roots и тот же anchor.
+
+После внешней победы worker увидел полный `seen` set и без подписи перевёл task
+в `SUBMITTED/APPLIED`. У race-task `submissionAttemptCount = 0`,
+`applicationAttemptCount = 0`, operation history пуст, envelope отсутствует;
+worker nonce остался `3/3`, global lane открыта. Surplus funding применён и
+fundedAmount стал 1000001, но `PAID_ON_TIME`, repayment totals и credit state не
+изменились.
+
+Измеренные source-to-destination интервалы: repayment до его verifier submission
+1734 s; funding до worker submission 720 s; repayment до окончательного
+`applyEvidence` 2799 s (включает намеренное ожидание funding prerequisite);
+race source event до внешнего submission 651 s. Это наблюдения одного testnet
+прогона, не SLA. Межоперационные gasUsed также не являются контролируемым
+сравнением одной формы proof: операции меняли разные состояния. Для каждого
+mined proof-bearing вызова exact roots и anchor записаны рядом с gasUsed, без
+объяснения через прошедшее время.
+
+Полная timing-разбивка использует только сохранённые source timestamps,
+fresh-preflight timestamps и worker task JSON. Точный момент, когда proof-builder
+впервые достиг нужной attested height, не зафиксирован ни для одного из трёх
+source events: отсутствует timestamp самого перехода высоты. Поэтому следующие
+fresh-preflight строки являются первым сохранённым подтверждением, что нужная
+высота уже была доступна, а не временем самого attestation:
+
+| Timing boundary | Наблюдение |
+|---|---:|
+| repayment source -> первое сохранённое fresh-proof подтверждение достаточной высоты | 1669.539 s |
+| это подтверждение -> mined worker submission | 64.461 s |
+| repayment submission receipt -> первая worker-финализация после depth +2 | 75.646 s |
+| funding source -> первое сохранённое fresh-proof подтверждение достаточной высоты | 665.107 s |
+| это подтверждение -> mined worker submission | 54.893 s |
+| funding submission receipt -> первая worker-финализация после depth +2 | 106.120 s |
+| race source -> первое сохранённое fresh-proof подтверждение достаточной высоты | 588.271 s |
+| это подтверждение -> mined external submission | 62.729 s |
+| external submission -> worker semantic reconciliation | 48.458 s; depth +2 не требовалась, worker envelope не существовал |
+
+Для раннего repayment сохранены дополнительные границы. Source event -> первое
+`VERIFIED_PENDING` заняло 1810.057 s. Первое `VERIFIED_PENDING` -> применение
+funding evidence заняло 900.231 s; после funding worker увидел repayment
+`READY_TO_APPLY` через 73.417 s. Применение funding -> mined `applyEvidence`,
+который закрыл сделку как `PAID_ON_TIME`, заняло 88.712 s. Receipt
+`applyEvidence` -> сохранённое worker-состояние `APPLIED` после depth +2 заняло
+53.903 s. Итого source repayment -> on-chain `PAID_ON_TIME` осталось равным
+2799 s; до локально сохранённого `APPLIED` прошло 2852.903 s.
+
+Следовательно, границы attested-height transition -> submission в строгом
+смысле остались `не зафиксировано`: отсутствует левая timestamp-граница.
+Зафиксированы только приведённые интервалы от первого последующего успешного
+fresh preflight. Момент достижения depth +2 также не записан отдельным chain
+timestamp; сохранён момент первой worker-финализации после требуемой глубины.
+
+Один параллельный read-only RPC preflight получил transport timeout; он ничего
+не подписал и не записал. Последовательный повтор с новым proof request прошёл.
+Новых protocol/implementation расхождений после `d3ff631…` не обнаружено.
+Deploy и push не выполнялись.
+
+## 2026-08-21 — S6 ABI decode blocker исправлен, live остаётся остановлен
+
+После буквального `РАЗРЕШАЮ S6 LIVE` создан отдельный testnet-only worker signer
+`0x16046B2b4FaE88f3D02264EAbbD24dC04912d2Bd`. Ключ хранится только во внешнем
+regular-файле `0600` внутри каталога `0700`; checkout-local `.env` worker не
+использует. Signer пополнен на `0.02 CTC` транзакцией
+`0xf81d2ab073d69e2b6de67aeb2ec1d3c821b13d68e5514e1a90ae9a1b84b846ef`
+в блоке 5347363. Bootstrap записал nonce 0, lane открыт, envelopes и фактические
+worker-комиссии отсутствуют.
+
+Для live-сценария borrower создал сделку
+`0x5cf1f030363c28c3fa1862759ccc63b338d0a57fd682d9a6965a61acf93706fc`
+транзакцией
+`0xefd4dc75cacbffd1c232e595c50b7cc910cdcc4466818c2b9f935ac8b65169e8`:
+designated investor A, required funding `1_000_000`, face value `1_100_000`,
+due source block 11535634. Обычный enrollment эффективен с Sepolia-блока
+11534638. Погашение намеренно отправлено до финансирования транзакцией
+`0xe90b91457786d4e89104e157c746b2d8ec8d91b9462321602c96591a6c2d72ec`
+в блоке 11534643; его evidence ID —
+`0x65f1d8a980b49ec20510b047473785ebcfd6648c0d4cfafd3857241b9c8df213`.
+Attestcoin достиг 11534650 за 501 секунду, proof построен свежим и
+`submitAndApply` успешно прошёл `eth_call`.
+
+Полный preflight перед первой worker-подписью показал signer nonce `0/0`, баланс
+`0.02 CTC`, runtime intervals `10/10`, пустые queue/reservation/rolling fees и
+открытую lane. Оценка intended `submitAndApply`: 282 203 gas, финальный gas limit
+338 644, maximum liability `0.000338644 CTC` при cap 1 gwei; все policy caps
+соблюдены.
+
+Preflight выявил достижимый implementation blocker в `WorkerChain.dealView()`.
+Непосредственная причина: ethers v6 возвращает единственный tuple `getDeal` уже
+развёрнутым, поэтому `result[0]` является borrower address. Код ошибочно делал
+`result[0] ?? result`, принимал строку адреса за tuple и читал её символы
+`"7"`/`"3"` как status/investor; `getAddress("3")` падал. Системная причина:
+engine tests использовали `FakeChain.dealView()` и обходили production adapter,
+а прежние `worker/chain.test.ts` проверяли gateway-log decoding и signing surface,
+но не фактическую ethers-v6 форму contract returns.
+
+После отдельного `РАЗРЕШАЮ S6 ABI FIX` лишний unwrap удалён. Regression строит
+ABI-encoded `getDeal` result, пропускает его через настоящий ethers `Contract` и
+вызывает production `WorkerChain.dealView()`. Он проверяет точные status и
+designated investor и падает на прежнем мутанте с тем же `invalid address`.
+
+Все остальные structured reads `WorkerChain` проверены на форму ответа. Второго
+unwrap/indexing defect не найдено: `evidenceStateOf` возвращает два отдельных
+значения и правильно индексируется; gateway log `Result`, raw receipt/log arrays,
+proof-builder JSON, fee/receipt/block objects и набор deployment getters читаются
+согласно своим фактическим API shapes. Аудит нашёл отдельный fail-closed дефект в
+Substrate SCALE read: `decodeScaleU64("0x")` возвращает `null`, но прежний
+`Number(null)` превращал malformed response в допустимый interval 0. Проверка
+`null` теперь предшествует числовому преобразованию; regression вызывает
+production `runtimeIntervals()` через JSON-RPC fetch и убивает прежний coercion.
+
+Известное отклонение покрытия остаётся: прямых adapter-level тестов пока нет для
+raw `eth_getTransactionReceipt`, ethers Log/Receipt/Block/FeeData,
+proof-builder JSON, положительной формы Substrate runtime response и
+агрегированного deployment readback. Engine safety для них проверяется через
+FakeChain, но это не проверка границы библиотек.
+
+После обоих adapter fixes последовательно выполнены только разрешённые проверки:
+`npm run test:worker` — 6/6 test-файлов, `npm run typecheck` — чисто,
+`git diff --check` — чисто. Forge и solc не запускались.
+
+Live остаётся остановлен до отдельного разрешения на возобновление. Worker ничего
+не подписывал и не отправлял: signer nonce остаётся 0, evidence `UNSEEN`, deal
+остаётся `CREATED`, exact envelope отсутствует. Исходную repayment-транзакцию
+повторять нельзя; тот же сохранённый enrollment и source hash достаточны для
+безопасного продолжения.
+
+## 2026-08-21 — fresh v0.4.8 deployment для S6 подтверждён
+
+После буквального `РАЗРЕШАЮ S6 DEPLOY V0.4.8` на Creditcoin3 Testnet 102031
+последовательно развёрнуты свежие контракты из текущих v0.4.8 артефактов:
+
+| Контракт | Адрес | Транзакция | Блок |
+|---|---|---|---:|
+| `Cr3dXVerifier` | `0xED64f6157408f211dda43649129EaC1F73161093` | `0xb37784b964bfb1cc7e4fd90f25dcb014a61415641c595fb83e8db7cdbbe4d37b` | 5347321 |
+| `Cr3dXDeals` | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` | `0xbbf95613e9f4152f49e4462cdfebdf3655e696bc3ae16114822665617bf891db` | 5347325 |
+| `Cr3dXCredit` | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` | создан внутри транзакции `Cr3dXDeals` | 5347325 |
+
+Обе deployment-квитанции имеют `status = 1`. Creation calldata в обеих
+транзакциях побайтно совпадает с локальными артефактами и аргументами, а runtime
+`Verifier`, `Deals` и `Credit` совпадает после маскирования immutable-областей.
+Wiring прочитан обратно с chain: verifier доверяет Sepolia gateway
+`0x11DD8a4c790939DEa8CED631dB27Afe54334a749` и `chainKey = 1`; Deals указывает на
+новый verifier и новый Credit; Credit указывает обратно на новый Deals.
+
+Состояние свежее: `dealCount = 0`, для проверенных адресов score 500, limit и
+available limit `5_000_000_000`, reserve и exposure равны нулю. Два deployment
+израсходовали 3 938 214 gas и `0.001969107 CTC`; остаток deployer после включения
+обоих блоков — `9999.9789024945 CTC`. Старые адреса сохранены в массивах
+`previousVerifiers` и `previousDeals` с причинами замены.
+
+Существующий Sepolia Gateway не передеплоен и не изменён: read-only проверка
+подтвердила прежний deployment receipt, точное creation calldata, token
+`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` и event nonce 25.
+
+Это закрывает deployment provenance gate, но не разрешает работу worker. Отдельный
+worker signer пока не настроен и его CTC-баланс не установлен; deployer молча не
+переиспользуется. Push, worker bootstrap, proof submission и иные продуктовые
+транзакции не выполнялись. Следующий state-changing gate остаётся буквальным
+`РАЗРЕШАЮ S6 LIVE` после создания и пополнения выделенного worker signer.
+
+## 2026-08-21 — S6 worker реализован локально, live gate не открыт
+
+Единственный нормативный вход реализации — document-only коммит
+`8759a1649b489e0d7d0a163471063d908813b589`; SHA-256
+`docs/S6_WORKER_SPEC.md` равен
+`901628b5c8dbaab23fd09e6fa0b8a0b5ed6df5b05d65ba484df87911798289fc`.
+Нормативный файл и контракты реализация не меняет.
+
+Добавлен permissionless TypeScript worker:
+
+- полный canonical-receipt admission с whole-transaction enrollment,
+  `effectiveFromSourceBlock`, лимитами очереди/событий и сохранением cursor;
+- отдельные inclusion, contract и automation state, append-only история reorg;
+- атомарные JSON-файлы `0600`, каталоги `0700`, schema version 1 и fail-closed
+  политика будущих миграций;
+- глобальная nonce lane и сохранение exact signed envelope до первого broadcast;
+- независимые semantic reconciliation и двухблочное разрешение exact receipt;
+- максимальная ответственность по комиссии резервируется вместе с envelope и
+  заменяется фактической комиссией подтверждённой квитанции;
+- отдельные submission/application epochs, повтор pending repayment после
+  изменения prerequisites и операторские `resume`/`resume-broadcast`;
+- kernel `flock` и секретные режимы `file|manager`; checkout-local `.env` и
+  `wallets:create` S6 не использует;
+- CLI для bootstrap, enrollment, queue/status/attention, single-step/run,
+  адресного advance и recovery.
+
+Архитектура записана в `docs/S6_WORKER_ARCHITECTURE.md`, эксплуатация и recovery —
+в `docs/S6_WORKER_RUNBOOK.md`, соответствие 46 обязательствам — в
+`docs/S6_WORKER_TEST_MATRIX.md`.
+
+Итоговый baseline выполнен последовательно, без параллельных компиляторов и
+тестовых процессов:
+
+- `npm run typecheck` — чисто;
+- `npm run test:scripts` — 9/9 файловых suites, в том числе все 38 worker test
+  cases и прежние script tests;
+- `forge build` — чисто, предупреждений компилятора нет;
+- non-invariant Foundry — 133/133;
+- отдельный полный invariant baseline — 8/8: семь stateful invariants по
+  256 campaigns × 500 calls, суммарно 896 000 handler calls, плюс fuzz-свойство;
+- `git diff --check` и guards неизменности нормативной спеки/контрактов — чисто.
+
+Live RPC, транзакции, deploy и push в implementation-коммите не выполнялись.
+Позднейший fresh v0.4.8 deployment записан отдельным разделом выше. До отдельного
+`РАЗРЕШАЮ S6 LIVE` worker не запускается против live сетей.
+
+---
+
 ## 2026-08-20 — Phase B: независимая проверка v0.4.8 завершена
 
 Спецификация v0.4.8 выпущена коммитом

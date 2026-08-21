@@ -32,8 +32,11 @@ pass.
 Stated plainly, because a credit product that overstates its guarantees is worse
 than one that has none.
 
-**Proven cryptographically:** the funding transfer happened, the repayment
-happened, the deadline passed, and the credit outcome follows from those facts.
+**Proven cryptographically:** the source transaction was included and succeeded,
+a genuine event came from the configured Gateway, the attested source height
+passed the deadline, and the credit outcome follows from those facts. The ERC-20
+transfer follows from verified Gateway code, which emits only after successful
+`transferFrom`; it is not established directly by the Attestcoin proof.
 
 **Not proven, and not claimed:** that the invoice is real, that the claim is
 legally enforceable, or who the borrower is. *Invoice authenticity and legal
@@ -79,9 +82,9 @@ anchor is the address.
 | Contract | Network | Address |
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
-| `Cr3dXVerifier` | Creditcoin3 Testnet | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
-| `Cr3dXDeals` | Creditcoin3 Testnet | `0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485` |
-| `Cr3dXCredit` | Creditcoin3 Testnet | `0x13AEC440a6cA605974Af15a9ef5B77EBC1442480` |
+| `Cr3dXVerifier` | Creditcoin3 Testnet | `0xED64f6157408f211dda43649129EaC1F73161093` |
+| `Cr3dXDeals` | Creditcoin3 Testnet | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` |
+| `Cr3dXCredit` | Creditcoin3 Testnet | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` |
 | `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
 
 An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
@@ -161,9 +164,11 @@ cp .env.example .env
 If you already cloned without submodules, `git submodule update --init --recursive`
 fetches the Solidity dependencies.
 
-`.env` is git-ignored and is the only place credentials are ever read from. The
-defaults in `.env.example` point at public endpoints and are enough to run the
-probe and the test suite, both of which are read-only and need no key.
+The S1-S5 scripts read the git-ignored checkout-local `.env`. The S6 worker does
+not: its launcher requires an explicit external checked file or an inherited
+secret-manager environment. `.env.example` documents both sets of variable
+names without containing a key. Public defaults are enough for the read-only
+probe and all local tests.
 
 If your parent shell exports `NODE_TLS_REJECT_UNAUTHORIZED=0`, remove it. Every
 network script refuses to run while global certificate verification is disabled.
@@ -176,6 +181,7 @@ For a shell you do not control, prefix the command with
 npm run build         # forge build
 npm test              # forge test
 npm run test:scripts  # node --test over the tooling's own logic
+npm run test:worker   # deterministic S6 worker coverage, no network or keys
 npm run typecheck     # tsc --noEmit over the TypeScript side
 ```
 
@@ -189,6 +195,43 @@ npm run capture:fixtures
 The capture reads expected values from `eth_getTransactionReceipt` and cross-checks
 them against the attested blob before writing anything, so a fixture can only be
 written if the protocol's encoding and Ethereum's own receipt agree.
+
+## S6 permissionless proof worker
+
+S6 is implemented as an untrusted liveness component under `worker/`. It watches
+complete canonical gateway receipts, waits for a fresh Attestcoin proof, submits
+through the public `submitAndApply` method and revisits individual pending facts
+through public `applyEvidence`. It adds no role or contract method and performs no
+cross-task batching.
+
+The normative implementation input is commit
+`8759a1649b489e0d7d0a163471063d908813b589`. Operator setup, explicit bootstrap,
+deal enrollment and exact-envelope recovery are documented in
+[the S6 runbook](docs/S6_WORKER_RUNBOOK.md). The persistent model and nonce
+safety argument are in [the architecture note](docs/S6_WORKER_ARCHITECTURE.md),
+and the 46-point deterministic coverage map is in
+[the test matrix](docs/S6_WORKER_TEST_MATRIX.md).
+
+The shortest local inspection path is:
+
+```sh
+export CR3DX_WORKER_STATE_DIR="$HOME/.local/state/cr3dx-worker"
+npm run worker -- status
+```
+
+Signing-capable commands must go through `worker/launch.sh` (the `npm run worker`
+scripts do). The launcher acquires a non-blocking kernel lock before reading a
+secret. File mode requires an external regular file owned by the worker user with
+mode `0600`, inside a worker-owned non-writable-by-others directory. Manager mode
+requires direct inherited injection. Neither mode loads `.env` or calls
+`wallets:create`.
+
+S6 live acceptance completed successfully on testnets against the exact fresh
+v0.4.8 deployment, using a separate funded worker signer. The worker carried a
+repayment submitted before funding through `VERIFIED_PENDING`, then applied it
+with targeted `applyEvidence` after funding. In the external-submission race it
+reconciled the winning external submission without a worker signature or
+broadcast. Exact hashes, timing and gas are in [docs/STATUS.md](docs/STATUS.md).
 
 ## Reproducing the live S5 scenario
 
@@ -232,16 +275,16 @@ Fund the public addresses that the command prints:
 - Creditcoin test CTC: use the EVM-address flow in the
   [official Creditcoin faucet guide](https://docs.creditcoin.org/wallets/using-testnet-faucet).
 
-The unchanged live anchors are explicit, because a symbol or a deployment-file
+The current live anchors are explicit, because a symbol or a deployment-file
 name is not an identifier:
 
 | Object | Address |
 |---|---|
 | Sepolia USDC | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` |
 | `Cr3dXGateway` | `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` |
-| `Cr3dXVerifier` | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
-| current `Cr3dXDeals` | `0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485` |
-| current `Cr3dXCredit` | `0x13AEC440a6cA605974Af15a9ef5B77EBC1442480` |
+| `Cr3dXVerifier` | `0xED64f6157408f211dda43649129EaC1F73161093` |
+| current `Cr3dXDeals` | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` |
+| current `Cr3dXCredit` | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` |
 
 There are two deliberately different modes:
 
@@ -376,8 +419,12 @@ unfunded deals left 2.2 USDC reserved. Costs were measured, not estimated:
 The complete transcript and machine-readable report are
 `data/live/s5-fresh-2026-08-20T05-30-18-335Z.{log,json}`.
 
-For comparison, the earlier one-run path of 2026-08-19 measured these individual
-operations:
+For comparison, the earlier one-run path of 2026-08-19 was a historical v0.4.4
+run against registry `0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c`.
+That deployment is superseded; raw evidence is
+`data/live/deal-2026-08-19T16-57-41-969Z.json`. The table compares operations
+inside that historical run only. It is not a before/after comparison with S6 or
+v0.4.8:
 
 | Operation | Chain | Gas | Continuity roots |
 |---|---|---:|---:|
@@ -436,6 +483,9 @@ NODE_USE_ENV_PROXY=1 npm run probe
   behaviour of the live protocol, and where it deviates from its documentation.
 - [docs/PRECOMPILE_FINDINGS.md](docs/PRECOMPILE_FINDINGS.md) - reconnaissance of
   the protocol sources, with line references.
+- [docs/S6_WORKER_SPEC.md](docs/S6_WORKER_SPEC.md) - accepted normative worker specification.
+- [docs/S6_WORKER_RUNBOOK.md](docs/S6_WORKER_RUNBOOK.md) - bootstrap, enrollment,
+  operation and exact-envelope recovery.
 - [docs/STATUS.md](docs/STATUS.md) - running log of what works and what does not.
 
 ## Status
@@ -448,5 +498,11 @@ address that is not the designated investor was refused permanently in the same
 run, and a counterfeit gateway event in an earlier one was ignored because its
 emitter was not the gateway.
 
-The proof worker and the demo interface are next. Running detail, transaction
-hashes and measured gas are in [docs/STATUS.md](docs/STATUS.md).
+The permissionless proof worker is implemented, deterministic coverage is
+complete, fresh v0.4.8 deployment provenance is established, and live acceptance
+completed successfully on testnets with a separate funded worker signer. The
+accepted cycle exercised repayment-before-funding through `VERIFIED_PENDING`,
+automatic targeted `applyEvidence` after funding, and external-submission
+reconciliation without a worker signature or broadcast. The demo interface is
+the next stage. Exact transaction hashes, timing and measured gas are in
+[docs/STATUS.md](docs/STATUS.md).
