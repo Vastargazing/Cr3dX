@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
 import test from 'node:test';
-import {Interface} from 'ethers';
+import {Interface, type FunctionFragment} from 'ethers';
+import type {SingleProof} from '../scripts/lib/proofs.js';
 import {WorkerChain, type RawSourceReceipt} from './chain.js';
 import type {Hex, WorkerConfig} from './types.js';
 
@@ -34,6 +35,7 @@ test('coverage 2 and 37: canonical ABI decode keeps receipt-local ordinal separa
     ['REPAYMENT', 2, 105, '8'],
   ]);
   assert.equal(decoded[0]!.dealId, dealId);
+  assert.deepEqual(decoded.map((event) => event.transactionIndex), [3, 3]);
   assert.equal(decoded[0]!.counterparty, investor);
   assert.equal(decoded[1]!.recipient, investor);
 });
@@ -47,9 +49,39 @@ test('coverage 46: matching gateway/topic with a non-canonical shape fails loudl
   assert.throws(() => chain.decodeGatewayEvents(receipt), /SHAPE_MISMATCH/);
 });
 
+test('coverage 30: production signing surface derives to exactly submitAndApply and applyEvidence', () => {
+  const productionPaths = readdirSync('worker')
+    .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
+    .map((name) => `worker/${name}`);
+  const sourceByPath = new Map(productionPaths.map((path) => [path, readFileSync(path, 'utf8')]));
+  const sources = [...sourceByPath.values()].join('\n');
+  const requestBuilders = new Set([...sources.matchAll(/\b(\w+)\([^;\n{]*\): TransactionRequest\s*[;{]/g)].map((match) => match[1]));
+  const encodedMethods = new Set([...sources.matchAll(/encodeFunctionData\(\s*['"]([^'"]+)['"]/g)].map((match) => match[1]));
+  assert.deepEqual([...requestBuilders].sort(), ['applicationRequest', 'submissionRequest']);
+  assert.deepEqual([...encodedMethods].sort(), ['applyEvidence', 'submitAndApply']);
+  assert.equal((sourceByPath.get('worker/chain.ts')!.match(/wallet\.signTransaction\(/g) ?? []).length, 1);
+  assert.equal((sourceByPath.get('worker/engine.ts')!.match(/this\.chain\.sign\(prepared\.request\)/g) ?? []).length, 1);
+
+  const chain = new WorkerChain(config());
+  const abiStateChangingMethods = chain.deals.interface.fragments
+    .filter((fragment): fragment is FunctionFragment => fragment.type === 'function')
+    .filter((fragment) => !['view', 'pure'].includes(fragment.stateMutability))
+    .map((fragment) => fragment.name)
+    .sort();
+  assert.deepEqual(abiStateChangingMethods, ['applyEvidence', 'submitAndApply']);
+  const proof: SingleProof = {
+    chainKey: 1, headerNumber: 100, txIndex: 2, txHash, txBytes: '0x01',
+    merkleProof: {root: blockHash, siblings: []}, continuityProof: {lowerEndpointDigest: blockHash, roots: []}, cached: false,
+  };
+  const actualMethods = [chain.submissionRequest(proof), chain.applicationRequest(dealId)]
+    .map((request) => chain.deals.interface.parseTransaction({data: request.data as string})?.name);
+  assert.deepEqual(actualMethods.sort(), ['applyEvidence', 'submitAndApply']);
+});
+
 test('coverage 30 and 41: production worker contains no batching, privileged contract call, dotenv, or wallets:create path', () => {
-  const sources = ['worker/chain.ts', 'worker/config.ts', 'worker/engine.ts', 'worker/cli.ts']
-    .map((path) => readFileSync(path, 'utf8'))
+  const sources = readdirSync('worker')
+    .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
+    .map((name) => readFileSync(`worker/${name}`, 'utf8'))
     .join('\n');
   for (const forbidden of ['submitAndApplyBatch', 'submitEvidenceBatch', 'markDefaulted(', 'createDeal(', "dotenv", 'wallets:create']) {
     assert.equal(sources.includes(forbidden), false, `forbidden production worker token: ${forbidden}`);

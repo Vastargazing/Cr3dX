@@ -587,6 +587,11 @@ export class WorkerEngine {
       delete envelope.receiptBlockHash;
       delete envelope.receiptStatus;
       this.store.writeTask(task);
+    } else if (envelope.receiptBlockNumber !== undefined) {
+      delete envelope.receiptBlockNumber;
+      delete envelope.receiptBlockHash;
+      delete envelope.receiptStatus;
+      this.store.writeTask(task);
     }
 
     await this.reconcileEnvelopeSemantic(task);

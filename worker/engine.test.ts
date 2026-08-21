@@ -8,7 +8,7 @@ import {Interface, keccak256, type TransactionRequest} from 'ethers';
 import type {CandidateLogRef, DealView, DestinationReceipt, PreparedTransaction, RawSourceReceipt} from './chain.js';
 import {WorkerEngine, type WorkerPort} from './engine.js';
 import {StateStore} from './state.js';
-import type {ContractEvidenceState, DecodedGatewayEvent, Hex, WorkerConfig, WorkerState, WorkerTask} from './types.js';
+import {SIX_HOURS_MS, type ContractEvidenceState, type DecodedGatewayEvent, type Hex, type WorkerConfig, type WorkerState, type WorkerTask} from './types.js';
 
 const TX = `0x${'10'.repeat(32)}` as Hex;
 const BLOCK_A = `0x${'20'.repeat(32)}` as Hex;
@@ -83,10 +83,22 @@ class FakeChain implements WorkerPort {
   async assertDeploymentConfiguration(): Promise<void> { if (this.deploymentMismatch) throw new Error('mismatch'); }
 }
 
+class CrashableStateStore extends StateStore {
+  crashBeforeFinalTaskReplacement = false;
+
+  override writeTask(task: WorkerTask): void {
+    if (this.crashBeforeFinalTaskReplacement && !task.inFlight && task.logical.operationHistory.length > 0) {
+      this.crashBeforeFinalTaskReplacement = false;
+      throw new Error('injected crash before final atomic task replacement');
+    }
+    super.writeTask(task);
+  }
+}
+
 test('coverage 1, 2, 3 and 28: duplicate delivery, multiple facts and restart overlap are lossless', async () => {
   const fixture = setup([event(0, 'FUNDING', DEAL_A), event(1, 'REPAYMENT', DEAL_A)]);
   await fixture.engine.scanOnce();
-  await fixture.engine.scanOnce();
+  await new WorkerEngine(fixture.config, fixture.store, fixture.chain, {log: () => {}}).scanOnce();
   const tasks = fixture.store.listTasks();
   assert.equal(tasks.length, 1);
   assert.equal(tasks[0]!.logical.currentInclusion!.events.length, 2);
@@ -94,6 +106,19 @@ test('coverage 1, 2, 3 and 28: duplicate delivery, multiple facts and restart ov
   assert.equal(tasks[0]!.logical.currentInclusion!.events[1]!.transactionLogOrdinal, 1);
   assert.deepEqual(fixture.chain.queried, [[100, 100], [100, 100]]);
   assert.equal(fixture.store.readState().sourceCursor?.blockNumber, 100);
+});
+
+test('coverage 3 and 28: restart backfill begins exactly 100 blocks before the persisted cursor', async () => {
+  const fixture = setup([]);
+  const state = fixture.store.readState();
+  state.sourceCursor = {blockNumber: 250, updatedAt: new Date(0).toISOString()};
+  fixture.store.writeState(state);
+  fixture.chain.head = 250;
+  fixture.chain.candidates = [];
+  const restarted = new WorkerEngine(fixture.config, fixture.store, fixture.chain, {log: () => {}});
+  await restarted.scanOnce();
+  assert.deepEqual(fixture.chain.queried, [[150, 250]]);
+  assert.equal(fixture.store.readState().sourceCursor?.blockNumber, 250);
 });
 
 test('coverage 5 and 6: waiting does not start an epoch; crash after proof fetch stores no proof and restart fetches fresh', async () => {
@@ -157,6 +182,12 @@ test('coverage 38 and 46: mixed admission and contradictory candidate stop befor
   await wrongBlock.engine.scanOnce();
   assert.match(wrongBlock.store.readState().globalAttentionReasons[0]!, /SOURCE_RECEIPT_CONTRADICTION/);
   assert.equal(wrongBlock.store.readState().sourceCursor, undefined);
+
+  const missingLog = setup([event(0, 'FUNDING', DEAL_A)]);
+  missingLog.chain.sourceReceipts.set(TX, {...receipt(), logs: []});
+  await missingLog.engine.scanOnce();
+  assert.match(missingLog.store.readState().globalAttentionReasons[0]!, /SOURCE_RECEIPT_CONTRADICTION/);
+  assert.equal(missingLog.store.readState().sourceCursor, undefined);
 });
 
 test('coverage 6-12, 14, 17, 33 and 44: one exact envelope owns the global lane across retry and restart', async () => {
@@ -215,6 +246,22 @@ test('coverage 13, 15, 19, 33 and 36: semantic success does not free nonce; exac
   assert.equal(completed.logical.currentInclusion!.events[0]!.automationState, 'APPLIED');
 });
 
+test('coverage 13: precomputed evidence ID recovers external submission without a worker receipt or signature', async () => {
+  const fixture = setup([event(0, 'FUNDING', DEAL_A)]);
+  await fixture.engine.scanOnce();
+  const evidenceId = fixture.store.listTasks()[0]!.logical.currentInclusion!.events[0]!.expectedEvidenceId;
+  fixture.chain.seenIds.add(evidenceId.toLowerCase());
+  fixture.chain.evidenceStates.set(evidenceId.toLowerCase(), {state: 'APPLIED', reason: 'NONE'});
+  const restarted = new WorkerEngine(fixture.config, fixture.store, fixture.chain, {log: () => {}});
+  await restarted.tick();
+  const recovered = fixture.store.listTasks()[0]!;
+  assert.equal(recovered.logical.sourceSubmissionState, 'SUBMITTED');
+  assert.equal(recovered.logical.currentInclusion!.events[0]!.automationState, 'APPLIED');
+  assert.equal(recovered.inFlight, undefined);
+  assert.equal(fixture.chain.signCount, 0);
+  assert.equal(fixture.chain.broadcasted.length, 0);
+});
+
 test('coverage 7 and 33: restart broadcasts a persisted envelope once even after external semantic success', async () => {
   const fixture = setup([event(0, 'FUNDING', DEAL_A)]);
   await fixture.engine.scanOnce();
@@ -229,8 +276,24 @@ test('coverage 7 and 33: restart broadcasts a persisted envelope once even after
   fixture.store.writeTask(task);
   await fixture.engine.tick();
   assert.deepEqual(fixture.chain.broadcasted, [RAW]);
-  assert.equal(fixture.store.readTask(task.taskId).inFlight?.broadcastCount, 1);
+  const persisted = fixture.store.readTask(task.taskId);
+  assert.equal(persisted.inFlight?.rawTransaction, RAW);
+  assert.equal(persisted.inFlight?.broadcastCount, 1);
+  assert.equal(fixture.store.unresolvedLane()?.task.taskId, task.taskId);
   assert.equal(fixture.chain.signCount, 0);
+
+  const blocked = structuredClone(persisted);
+  blocked.taskId = 'e'.repeat(64);
+  blocked.logical.transactionHash = `0x${'e0'.repeat(32)}`;
+  delete blocked.inFlight;
+  blocked.logical.currentInclusion!.events[0]!.expectedEvidenceId = `0x${'ee'.repeat(32)}`;
+  blocked.logical.currentInclusion!.events[0]!.contractState = 'VERIFIED_PENDING';
+  blocked.logical.currentInclusion!.events[0]!.automationState = 'READY_TO_APPLY';
+  fixture.store.writeTask(blocked);
+  await fixture.engine.tick();
+  assert.equal(fixture.chain.signCount, 0);
+  assert.equal(fixture.store.readTask(blocked.taskId).logical.currentInclusion!.events[0]!.automationState, 'READY_TO_APPLY');
+  assert.equal(fixture.store.unresolvedLane()?.task.taskId, task.taskId);
 });
 
 test('coverage 17 and 35: the persisted envelope deadline expires without bump, replacement or deletion', async () => {
@@ -246,6 +309,22 @@ test('coverage 17 and 35: the persisted envelope deadline expires without bump, 
   assert.ok(task.inFlight);
   assert.equal(fixture.chain.signCount, 1);
   assert.equal(task.logical.sourceAttentionReason, 'IN_FLIGHT_RESOLUTION_WINDOW_EXPIRED');
+});
+
+test('coverage 22: an elapsed submission epoch deterministically transitions to attention without signing', async () => {
+  const fixture = setup([event(0, 'FUNDING', DEAL_A)], [DEAL_A], () => SIX_HOURS_MS);
+  await fixture.engine.scanOnce();
+  const task = fixture.store.listTasks()[0]!;
+  task.logical.submissionEpoch = {
+    startedAt: new Date(0).toISOString(), deadlineAt: new Date(SIX_HOURS_MS).toISOString(), retryIndex: 7,
+  };
+  task.logical.sourceSubmissionState = 'READY_FOR_PROOF';
+  fixture.store.writeTask(task);
+  await fixture.engine.tick();
+  const expired = fixture.store.readTask(task.taskId);
+  assert.equal(expired.logical.sourceSubmissionState, 'ATTENTION_REQUIRED');
+  assert.match(expired.logical.sourceAttentionReason ?? '', /epoch expired/);
+  assert.equal(fixture.chain.signCount, 0);
 });
 
 test('coverage 25 and 35: operator exact-byte rebroadcast remains possible after expiry without resetting the deadline', async () => {
@@ -292,8 +371,81 @@ test('coverage 36: a receipt disappearing before confirmation depth restores unr
   fixture.chain.destinationReceipts.delete(DEST_TX);
   now += 5_000;
   await fixture.engine.tick();
-  assert.ok(fixture.store.listTasks()[0]!.inFlight);
+  const unresolved = fixture.store.listTasks()[0]!;
+  assert.equal(unresolved.inFlight?.rawTransaction, RAW);
+  assert.equal(unresolved.inFlight?.maximumLiability, '200');
+  assert.equal(unresolved.inFlight?.receiptBlockNumber, undefined);
+  assert.equal(unresolved.logical.operationHistory.length, 0);
   assert.deepEqual(fixture.chain.broadcasted, [RAW, RAW]);
+});
+
+test('coverage 36: a canonical destination hash change retains the exact envelope and clears stale receipt metadata', async () => {
+  const fixture = setup([event(0, 'FUNDING', DEAL_A)]);
+  await fixture.engine.scanOnce();
+  await fixture.engine.tick();
+  const receiptHash = `0x${'73'.repeat(32)}` as Hex;
+  fixture.chain.destinationReceipts.set(DEST_TX, {hash: DEST_TX, status: 1, blockNumber: 30, blockHash: receiptHash, gasUsed: 1n, effectiveGasPrice: 1n});
+  fixture.chain.canonicalHashes.set(30, receiptHash);
+  fixture.chain.destinationHeight = 31;
+  await fixture.engine.tick();
+  assert.equal(fixture.store.listTasks()[0]!.inFlight?.receiptBlockHash, receiptHash);
+
+  fixture.chain.canonicalHashes.set(30, BLOCK_B);
+  await fixture.engine.tick();
+  const unresolved = fixture.store.listTasks()[0]!;
+  assert.equal(unresolved.inFlight?.rawTransaction, RAW);
+  assert.equal(unresolved.inFlight?.receiptBlockNumber, undefined);
+  assert.equal(unresolved.inFlight?.receiptBlockHash, undefined);
+  assert.equal(unresolved.logical.operationHistory.length, 0);
+});
+
+test('coverage 43 side A: crash before final task replacement preserves full reservation until restart atomically records actual fee', async () => {
+  const fixture = setup([event(0, 'FUNDING', DEAL_A)], [DEAL_A], () => 1_000);
+  await fixture.engine.scanOnce();
+  await fixture.engine.tick();
+  const evidenceId = fixture.store.listTasks()[0]!.logical.currentInclusion!.events[0]!.expectedEvidenceId;
+  fixture.chain.seenIds.add(evidenceId.toLowerCase());
+  fixture.chain.evidenceStates.set(evidenceId.toLowerCase(), {state: 'APPLIED', reason: 'NONE'});
+  installFinalReceipt(fixture.chain, 60, 50n, 2n);
+
+  fixture.store.crashBeforeFinalTaskReplacement = true;
+  await assert.rejects(() => fixture.engine.tick(), /injected crash/);
+  let committed = fixture.store.listTasks()[0]!;
+  assert.equal(committed.inFlight?.rawTransaction, RAW);
+  assert.equal(committed.inFlight?.maximumLiability, '200');
+  assert.equal(committed.logical.operationHistory.length, 0);
+  assert.deepEqual(committedFeeLedger([committed]), {actual: 0n, reserved: 200n, total: 200n});
+
+  const restarted = new WorkerEngine(fixture.config, fixture.store, fixture.chain, {now: () => 1_000, random: () => 0.5, log: () => {}});
+  await restarted.tick();
+  committed = fixture.store.listTasks()[0]!;
+  assert.equal(committed.inFlight, undefined);
+  assert.equal(committed.logical.operationHistory.length, 1);
+  assert.equal(committed.logical.operationHistory[0]!.actualFee, '100');
+  assert.deepEqual(committedFeeLedger([committed]), {actual: 100n, reserved: 0n, total: 100n});
+});
+
+test('coverage 43 side B: restart after final task replacement neither omits nor double-charges actual fee', async () => {
+  const fixture = setup([event(0, 'FUNDING', DEAL_A)]);
+  await fixture.engine.scanOnce();
+  await fixture.engine.tick();
+  const evidenceId = fixture.store.listTasks()[0]!.logical.currentInclusion!.events[0]!.expectedEvidenceId;
+  fixture.chain.seenIds.add(evidenceId.toLowerCase());
+  fixture.chain.evidenceStates.set(evidenceId.toLowerCase(), {state: 'APPLIED', reason: 'NONE'});
+  installFinalReceipt(fixture.chain, 61, 50n, 2n);
+  await fixture.engine.tick();
+
+  let committed = fixture.store.listTasks()[0]!;
+  assert.equal(committed.inFlight, undefined);
+  assert.equal(committed.logical.operationHistory.length, 1);
+  assert.deepEqual(committedFeeLedger([committed]), {actual: 100n, reserved: 0n, total: 100n});
+  const restarted = new WorkerEngine(fixture.config, fixture.store, fixture.chain, {now: () => 1_000, random: () => 0.5, log: () => {}});
+  await restarted.tick();
+  committed = fixture.store.listTasks()[0]!;
+  assert.equal(committed.inFlight, undefined);
+  assert.equal(committed.logical.operationHistory.length, 1);
+  assert.equal(committed.logical.operationHistory[0]!.transactionHash, DEST_TX);
+  assert.deepEqual(committedFeeLedger([committed]), {actual: 100n, reserved: 0n, total: 100n});
 });
 
 test('coverage 20, 21 and 34: repayment remains pending across restart then gets an independent application epoch', async () => {
@@ -338,15 +490,17 @@ test('coverage 23-25: resume creates epochs, refuses a live envelope, and resume
 test('coverage 29 and 37: same-hash re-inclusion re-decodes nonce and preserves immutable history', async () => {
   const fixture = setup([event(0, 'FUNDING', DEAL_A)]);
   await fixture.engine.scanOnce();
-  const replacementReceipt = receipt(BLOCK_B, 101);
+  const replacementReceipt = {...receipt(BLOCK_B, 101), transactionIndex: 9};
   fixture.chain.sourceReceipts.set(TX, replacementReceipt);
-  fixture.chain.decoded.set(BLOCK_B, [event(0, 'FUNDING', DEAL_A, BLOCK_B, 101, '99')]);
+  fixture.chain.decoded.set(BLOCK_B, [event(0, 'FUNDING', DEAL_A, BLOCK_B, 101, '99', 9)]);
   fixture.chain.candidates = [candidate(replacementReceipt)];
   fixture.chain.head = 101;
   await fixture.engine.scanOnce();
   const task = fixture.store.listTasks()[0]!;
   assert.equal(task.logical.inclusionHistory.length, 1);
   assert.equal(task.logical.inclusionHistory[0]!.events[0]!.inclusionState, 'SUPERSEDED');
+  assert.equal(task.logical.currentInclusion!.transactionIndex, 9);
+  assert.equal(task.logical.currentInclusion!.events[0]!.transactionIndex, 9);
   assert.equal(task.logical.currentInclusion!.events[0]!.eventNonce, '99');
   assert.notEqual(task.logical.currentInclusion!.events[0]!.expectedEvidenceId, task.logical.inclusionHistory[0]!.events[0]!.expectedEvidenceId);
 });
@@ -502,11 +656,38 @@ test('coverage 42: mined revert resolves only the envelope and fails closed from
   assert.equal(task.logical.operationHistory[0]!.receiptStatus, 0);
 });
 
-function setup(events: DecodedGatewayEvent[], enrollments: Hex[] = [DEAL_A, DEAL_B], now: () => number = () => 1_000) {
+test('coverage 42: mined revert after independent terminal application resolves the envelope from post-state', async () => {
+  const fixture = setup([event(0, 'FUNDING', DEAL_A)]);
+  await fixture.engine.scanOnce();
+  const evidenceId = fixture.store.listTasks()[0]!.logical.currentInclusion!.events[0]!.expectedEvidenceId;
+  fixture.chain.seenIds.add(evidenceId.toLowerCase());
+  fixture.chain.evidenceStates.set(evidenceId.toLowerCase(), {state: 'VERIFIED_PENDING', reason: 'NONE'});
+  fixture.chain.deals.set(DEAL_A.toLowerCase(), {status: 2, designatedInvestor: INVESTOR});
+  await fixture.engine.tick();
+  assert.equal(fixture.store.listTasks()[0]!.inFlight?.purpose.kind, 'APPLICATION');
+
+  fixture.chain.evidenceStates.set(evidenceId.toLowerCase(), {state: 'APPLIED', reason: 'NONE'});
+  const receiptHash = `0x${'76'.repeat(32)}` as Hex;
+  fixture.chain.destinationReceipts.set(DEST_TX, {hash: DEST_TX, status: 0, blockNumber: 70, blockHash: receiptHash, gasUsed: 10n, effectiveGasPrice: 3n});
+  fixture.chain.canonicalHashes.set(70, receiptHash);
+  fixture.chain.destinationHeight = 72;
+  await fixture.engine.tick();
+  const task = fixture.store.listTasks()[0]!;
+  assert.equal(task.inFlight, undefined);
+  assert.equal(task.logical.currentInclusion!.events[0]!.automationState, 'APPLIED');
+  assert.equal(task.logical.currentInclusion!.events[0]!.rejectionReason, 'NONE');
+  assert.equal(task.logical.operationHistory[0]!.receiptStatus, 0);
+});
+
+function setup(
+  events: DecodedGatewayEvent[],
+  enrollments: Hex[] = [DEAL_A, DEAL_B],
+  now: () => number = () => 1_000,
+) {
   const config = workerConfig();
   const stateDir = join(mkdtempSync(join(tmpdir(), 'cr3dx-engine-')), 'state');
   mkdirSync(stateDir, {mode: 0o700});
-  const store = new StateStore(stateDir);
+  const store = new CrashableStateStore(stateDir);
   store.bootstrap(`0x${'12'.repeat(20)}`, 0, new Date(0));
   const state = store.readState();
   for (const dealId of enrollments) state.enrollments[dealId.toLowerCase()] = {dealId, effectiveFromSourceBlock: 100, enrolledAt: new Date(0).toISOString()};
@@ -520,6 +701,20 @@ function setup(events: DecodedGatewayEvent[], enrollments: Hex[] = [DEAL_A, DEAL
   return {config, store, chain, engine};
 }
 
+function installFinalReceipt(chain: FakeChain, blockNumber: number, gasUsed: bigint, effectiveGasPrice: bigint): void {
+  const blockHash = `0x${blockNumber.toString(16).padStart(64, '0')}` as Hex;
+  chain.destinationReceipts.set(DEST_TX, {hash: DEST_TX, status: 1, blockNumber, blockHash, gasUsed, effectiveGasPrice});
+  chain.canonicalHashes.set(blockNumber, blockHash);
+  chain.destinationHeight = blockNumber + 2;
+}
+
+function committedFeeLedger(tasks: WorkerTask[]): {actual: bigint; reserved: bigint; total: bigint} {
+  const actual = tasks.flatMap((task) => task.logical.operationHistory)
+    .reduce((sum, operation) => sum + BigInt(operation.actualFee), 0n);
+  const reserved = tasks.reduce((sum, task) => sum + BigInt(task.inFlight?.maximumLiability ?? '0'), 0n);
+  return {actual, reserved, total: actual + reserved};
+}
+
 function receipt(blockHash = BLOCK_A, blockNumber = 100): RawSourceReceipt {
   return {
     transactionHash: TX, blockNumber, blockHash, transactionIndex: 2, status: 1,
@@ -531,10 +726,18 @@ function candidate(sourceReceipt: RawSourceReceipt): CandidateLogRef {
   return {transactionHash: sourceReceipt.transactionHash, blockNumber: sourceReceipt.blockNumber, blockHash: sourceReceipt.blockHash, logIndex: 7, topic0: workerConfig().fundingTopic};
 }
 
-function event(ordinal: number, kind: 'FUNDING' | 'REPAYMENT', dealId: Hex, blockHash = BLOCK_A, blockNumber = 100, nonce = String(ordinal + 1)): DecodedGatewayEvent {
+function event(
+  ordinal: number,
+  kind: 'FUNDING' | 'REPAYMENT',
+  dealId: Hex,
+  blockHash = BLOCK_A,
+  blockNumber = 100,
+  nonce = String(ordinal + 1),
+  transactionIndex = 2,
+): DecodedGatewayEvent {
   return {
     sourceChainId: 11155111, transactionHash: TX, sourceBlockNumber: blockNumber, sourceBlockHash: blockHash,
-    transactionIndex: 2, transactionLogOrdinal: ordinal, rpcLogIndex: 7 + ordinal, emitter: GATEWAY, kind, dealId,
+    transactionIndex, transactionLogOrdinal: ordinal, rpcLogIndex: 7 + ordinal, emitter: GATEWAY, kind, dealId,
     counterparty: INVESTOR, recipient: kind === 'FUNDING' ? BORROWER : INVESTOR, amount: '100', eventNonce: nonce,
   };
 }
