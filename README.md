@@ -152,26 +152,49 @@ v6, which is also what the protocol SDK is written in.
 
 ## Setup
 
-Requires Node.js 20 or newer and Foundry.
+Requires Node.js 20 or newer and Foundry. The tested baseline is Node.js
+`22.22.1`, npm `9.2.0`, Forge `1.7.1` and Solc `0.8.28`; these versions describe
+the reproduced environment rather than impose hard pins.
+
+### Local and read-only development
+
+Install, build, test and inspect the repository without an `.env` or any
+credential. Do not copy `.env.example` merely to run local commands:
 
 ```sh
-git clone --recurse-submodules https://github.com/Vastargazing/Cr3dX.git
+env -u NODE_TLS_REJECT_UNAUTHORIZED git clone --recurse-submodules https://github.com/Vastargazing/Cr3dX.git
 cd Cr3dX
 env -u NODE_TLS_REJECT_UNAUTHORIZED npm ci
-curl -L https://foundry.paradigm.xyz | bash
-~/.foundry/bin/foundryup
+env -u NODE_TLS_REJECT_UNAUTHORIZED curl -L https://foundry.paradigm.xyz | bash
+env -u NODE_TLS_REJECT_UNAUTHORIZED ~/.foundry/bin/foundryup
 export PATH="$HOME/.foundry/bin:$PATH"
-cp .env.example .env
 ```
 
-If you already cloned without submodules, `git submodule update --init --recursive`
+If you already cloned without submodules,
+`env -u NODE_TLS_REJECT_UNAUTHORIZED git submodule update --init --recursive`
 fetches the Solidity dependencies.
 
-The S1-S5 scripts read the git-ignored checkout-local `.env`. The S6 worker does
-not: its launcher requires an explicit external checked file or an inherited
-secret-manager environment. `.env.example` documents both sets of variable
-names without containing a key. Public defaults are enough for the read-only
-probe and all local tests.
+### Live S1-S5 credentials
+
+Choose one credential mode; do not combine them into one setup sequence:
+
+- keep a protected env file outside the checkout and expose it through the
+  git-ignored `.env` symlink; or
+- inject the same variables through the inherited process environment, with no
+  project `.env` at all.
+
+`.env` is the only credential **file** that S1-S5 tooling loads automatically.
+The tooling ultimately reads `process.env`, so inherited variables are equally
+valid. Before converting an existing checkout, inspect the path with
+`ls -ld .env`, check whether it is non-empty, and verify the presence of the two
+credential variable names without printing their values. Do not remove,
+overwrite or replace an existing credential file until it has been backed up and
+its storage mode is understood.
+
+The S6 launcher is deliberately separate: it never reads project `.env` and
+uses only its external checked `file` mode or inherited secret-manager `manager`
+mode. `.env.example` documents variable names and public defaults without
+containing a key.
 
 If your parent shell exports `NODE_TLS_REJECT_UNAUTHORIZED=0`, remove it. Every
 network script refuses to run while global certificate verification is disabled.
@@ -188,11 +211,20 @@ npm run test:worker   # deterministic S6 worker coverage, no network or keys
 npm run typecheck     # tsc --noEmit over the TypeScript side
 ```
 
+The accepted baseline has 133/133 non-invariant Foundry tests and 8/8 invariant
+or property suites. Seven stateful invariants ran 256 campaigns x 500 calls,
+896,000 handler calls in total. The current TypeScript baseline has 10/10 file
+suites after adding the wallet persistence regressions, including the accepted
+38 worker cases and the script tests. A full Forge run can spend
+several minutes printing almost nothing; that is not by itself a hang.
+`typecheck` may produce no output on success. Run Forge, worker and script suites
+sequentially rather than starting parallel compilers or test processes.
+
 The decoder tests run against transaction blobs captured from live Sepolia rather
 than against blobs written by hand. To refresh them:
 
 ```sh
-npm run capture:fixtures
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run capture:fixtures
 ```
 
 The capture reads expected values from `eth_getTransactionReceipt` and cross-checks
@@ -249,7 +281,7 @@ repository can move or be deleted without moving the keys with it.
 For a new checkout on Linux, create the private target before generating wallets:
 
 ```sh
-env -u NODE_TLS_REJECT_UNAUTHORIZED npm ci
+test ! -e .env && test ! -L .env || { ls -ld .env; echo 'Inspect the existing .env before continuing.'; false; }
 mkdir -p ~/.config/cr3dx
 chmod 700 ~/.config/cr3dx
 touch ~/.config/cr3dx/.env
@@ -257,16 +289,22 @@ chmod 600 ~/.config/cr3dx/.env
 ln -s ~/.config/cr3dx/.env .env
 npm run wallets:create
 npm run build
-# Fund the two printed public addresses, then run the complete acceptance:
-env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:fresh
 ```
 
-`wallets:create` follows the symlink, verifies that its target is mode `0600`,
-and puts both generated private keys there as `DEPLOYER_PRIVATE_KEY` and
-`BORROWER_PRIVATE_KEY`. If the target filesystem cannot enforce private Unix
-permissions, it refuses before generating a key. It prints only the public
-addresses. For an existing pair, populate the protected target yourself or
-export the two variables in the shell; no project-local regular `.env` is needed.
+`wallets:create` treats persistence as a security boundary. A missing `.env` is
+created atomically as a regular mode-`0600` file. An existing regular file is
+updated through a unique exclusive sibling and atomic rename, preserving valid
+keys and unrelated content. For a symlink, the resolved regular target is
+updated by an atomic sibling on the target filesystem and the checkout symlink
+is preserved. On POSIX the command verifies target ownership and mode, probes
+the sibling directory's ownership and write permissions, probes private sibling
+creation and rename before generating a key, and refuses unsafe, dangling,
+non-regular or unresolvable targets. Private keys are never printed.
+S6 never uses this command for its worker signer.
+
+For an existing pair you may instead populate the protected target yourself or
+export `DEPLOYER_PRIVATE_KEY` and `BORROWER_PRIVATE_KEY` in the inherited process
+environment; no project-local regular `.env` is required.
 
 Fund the public addresses that the command prints:
 
@@ -291,6 +329,16 @@ name is not an identifier:
 
 There are two deliberately different modes:
 
+Before `fresh`, understand its side effects: it creates a new testnet
+Deals/Credit pair, sends a Creditcoin deployment transaction, and changes the
+tracked `deployments/creditcoin.json`. The previous pair is appended to
+`previousDeals`, while the new `deals` and constructor-created `credit` become
+current. A clean checkout is therefore expected to become dirty. After success
+or interruption, inspect `git status --short` and
+`git diff -- deployments/creditcoin.json`, confirm the deployment receipt and
+addresses, and either retain that diff as committed evidence or deliberately
+archive/discard it only after review. Do not lose an unexplained deployment diff.
+
 ```sh
 # Deploy a new Deals/Credit pair, assert score 500 and empty history/reserve/
 # exposure, then execute two consecutive complete runs without intervention.
@@ -300,24 +348,79 @@ env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:fresh
 env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:continue
 ```
 
+The integrated preflight for the exact selected run is read-only and exits
+before deployment or any transaction:
+
+```sh
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run deal:live -- --mode fresh --runs 2 --preflight-only
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run deal:live -- --mode continue --runs 1 --preflight-only
+```
+
 Both are one-command paths. The script performs approvals when needed, creates
-the deal, sends real Sepolia funding A to B, waits with visible attestation
-progress, builds a fresh proof immediately before `submitAndApply`, observes
-`FINANCED`, repays B to A, waits and proves again, observes `PAID_ON_TIME`, then
-opens a second deal and deliberately leaves it in `CREATED`. It prints status,
-all deal sums, reserve, exposure, score, total limit and available limit after
-every step. It also writes the complete console transcript and a machine-readable
-JSON report to `data/live/s5-<mode>-<timestamp>.{log,json}`.
+the deal and sends real Sepolia funding A to B. Wallet B then sends a separate
+unauthorized funding self-transfer, which requires its own allowance, Sepolia
+transaction and gas; its proof must end as
+`REJECTED_PERMANENT / WRONG_INVESTOR`. After attestation the valid funding proof
+produces `FINANCED`. B repays A, the script waits and proves again, observes
+`PAID_ON_TIME`, then opens a second deal and deliberately leaves it in `CREATED`.
+It prints status, all deal sums, reserve, exposure, score, total limit and
+available limit after every step. Only a successful command writes the final
+machine-readable JSON and complete transcript to
+`data/live/s5-<mode>-<timestamp>.{log,json}`; a caught failure writes only an
+`s5-failed-*.log`, and a hard interruption may leave neither final artifact.
 
 Writes are signed locally and their transaction hashes are known before the RPC
 call. If `eth_sendRawTransaction` times out, the script checks that hash and may
 rebroadcast only the identical raw transaction. It never guesses by sending a new
-logical operation. If an older run stopped after a confirmed primary step, inspect
-the on-chain deal first and resume that explicit deal only:
+logical operation.
+
+If a run stops after `createDeal`, use the printed deal ID if it is still
+available. Otherwise take the printed create-transaction hash, or find the
+borrower's transaction to the recorded Deals address in the Creditcoin explorer,
+and inspect its `DealCreated` receipt. The event's first indexed argument is the
+primary deal ID. Both recovery commands below are read-only:
+
+```sh
+export DEALS_ADDRESS=0x<deals-address-from-deployments/creditcoin.json>
+env -u NODE_TLS_REJECT_UNAUTHORIZED cast receipt 0x<create-tx-hash> --rpc-url "$CREDITCOIN_RPC_URL"
+env -u NODE_TLS_REJECT_UNAUTHORIZED cast logs \
+  --rpc-url "$CREDITCOIN_RPC_URL" --address "$DEALS_ADDRESS" \
+  --from-block <creation-block> --to-block <creation-block> \
+  'DealCreated(bytes32 indexed,address indexed,address indexed,uint256,uint256,uint64,uint96)'
+```
+
+Read the deal itself before deciding whether to resume:
+
+```sh
+env -u NODE_TLS_REJECT_UNAUTHORIZED cast call "$DEALS_ADDRESS" \
+  'getDeal(bytes32)((address,uint64,uint8,address,uint96,address,uint256,uint256,uint256,uint256,uint256))' \
+  0x<deal-id> --rpc-url "$CREDITCOIN_RPC_URL"
+```
+
+The returned fields are borrower, due block, numeric status, designated
+investor, sequence, audit-only investor, required funding, funded amount, face
+value, repaid amount and on-time repaid amount. Current recovery behavior is:
+
+| Status | Meaning | `s5:resume` |
+|---:|---|---|
+| 0 | `NONE`, unknown deal | refused |
+| 1 | `CREATED`, funding not applied | refused |
+| 2 | `FINANCED` | allowed only for the configured borrower/investor and non-zero outstanding debt; sends repayment and finishes the run |
+| 3 | `DEFAULTED` | refused |
+| 4 | `PAID_LATE` | refused |
+| 5 | `PAID_ON_TIME` | allowed only with the matching on-time outcome and zero outstanding debt; creates only the reserved second deal |
+
+The resume command is not read-only. After the inspection above, resume only the
+explicit eligible deal:
 
 ```sh
 env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:resume -- 0x<deal-id>
 ```
+
+Final `data/live/s5-*.{log,json}` files are written only after successful
+completion. A caught failure may leave `s5-failed-*.log`; a process kill or power
+loss can occur before any durable transcript exists, so the receipt and explorer
+remain the recovery source of truth.
 
 Preflight is part of the same command and sends nothing until every blocker has
 passed. For two runs B must already hold at least 0.2 USDC. It prints both finite
@@ -334,9 +437,23 @@ expected state drift, not a cleanup bug. `fresh` is the only mode in which the
 first score transition is deterministically 500 to 525; `continue` reports and
 uses whatever history is already on chain.
 
-**`preflight` sends nothing** and is safe to run at any point. It projects the
-whole USDC chain step by step from the balances actually on chain and prints
-where the run would stop:
+### Legacy fixture preflight
+
+The standalone fixture preflight is also read-only, but it is not the integrated
+S5 `fresh`/`continue` preflight shown above:
+
+```sh
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run preflight
+```
+
+Its related historical capture is a separate state-changing command:
+
+```sh
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run capture:gate
+```
+
+The read-only `preflight` command projects the older helper/double-funding fixture from live
+balances and prints where that fixture would stop:
 
 ```
 step                                               A         B    helper
@@ -351,13 +468,15 @@ Only 1.1 USDC of new money is ever needed for the whole run, because the money
 circulates: A pays B 1.0, B pays A back 1.1, and A reuses that to drive the
 double-funding fixture.
 
-That circulation is also why a half-finished run is dangerous to restart. It
-leaves the tokens sitting in B, which any "does each account hold enough" check
+That fixture circulation is also why a half-finished fixture run is dangerous
+to restart. It leaves the tokens sitting in B, which any "does each account hold enough" check
 reports as *A needs more USDC*, advice that spends a faucet cooldown while your
 own tokens sit one wallet away. Preflight recognises the exact state each stage
 leaves behind, says which one it matches, and tells you to move the tokens back
-instead. `capture:gate` runs the same check and refuses to send anything on
-balances that do not look like a clean start.
+instead. `capture:gate` first runs the same gate and refuses to send anything on
+balances that do not look like a clean start, but after the gate passes it does
+send the historical fixture transactions. Its helper output is not the preflight
+for a selected S5 `fresh` or `continue` run.
 
 
 The two-run `s5:fresh` command starts with these conservative faucet targets:
@@ -385,8 +504,8 @@ least 1.1 USDC before repayment, then waits for the repayment receipt and checks
 A has at least 1.0 USDC before approving and calling the helper. Confirmed
 allowances are read back from the token before the next transaction is sent.
 
-`npm run verify:live` is the claim the project stands on, executed rather than
-asserted: a real Sepolia transaction, a freshly built Attestcoin proof, on-chain
+`env -u NODE_TLS_REJECT_UNAUTHORIZED npm run verify:live` is the claim the
+project stands on, executed rather than asserted: a real Sepolia transaction, a freshly built Attestcoin proof, on-chain
 verification, and one immutable fact per genuine gateway event, with a lookalike
 event in the same transaction ignored. It fetches proofs fresh every run and
 never replays stored continuity proofs. Roughly twenty minutes is a practical
@@ -398,8 +517,8 @@ for a future fresh proof; these are operational policies, not immutable protocol
 guarantees. See
 [docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
 
-`npm run s5:continue` is the same claim carried through to a credit outcome. B
-opens a deal, A funds it on Sepolia, B also sends a funding for the same deal
+`env -u NODE_TLS_REJECT_UNAUTHORIZED npm run s5:continue` is the same claim
+carried through to a credit outcome. B opens a deal, A funds it on Sepolia, B also sends a funding for the same deal
 which nothing entitles B to do, both are proven and applied in one Creditcoin
 transaction each, B repays, and the deal closes as `PAID_ON_TIME` with the score
 and the limit moving. The impostor funding lands in `REJECTED_PERMANENT` with
@@ -450,8 +569,8 @@ reverts inside the token with an allowance error. That failure has nothing to do
 with Attestcoin, and it is by far the most likely thing to go wrong when
 reproducing the demo, so it is worth recognising on sight.
 
-`npm run capture:gate` sends its transactions immediately and then waits in one
-block for attestation to catch up, which takes roughly ten minutes: attestation
+`env -u NODE_TLS_REJECT_UNAUTHORIZED npm run capture:gate` sends its
+transactions immediately and then waits in one block for attestation to catch up, which takes roughly ten minutes: attestation
 trails the Sepolia head by about seven minutes by design, and the proof builder's
 own cache trails that. The wait is the protocol's reorg protection, not a stall.
 Progress is printed each poll.
@@ -465,7 +584,7 @@ testnet and writes the results into
 [docs/ATTESTCOIN_INTEGRATION.md](docs/ATTESTCOIN_INTEGRATION.md).
 
 ```sh
-npm run probe
+env -u NODE_TLS_REJECT_UNAUTHORIZED npm run probe
 ```
 
 The run takes about fifteen minutes, most of it sampling attestation lag. Raw
@@ -475,7 +594,7 @@ If your machine reaches the internet through a proxy, Node has to be told to use
 it, otherwise every request fails as a network detection timeout:
 
 ```sh
-NODE_USE_ENV_PROXY=1 npm run probe
+env -u NODE_TLS_REJECT_UNAUTHORIZED NODE_USE_ENV_PROXY=1 npm run probe
 ```
 
 ## Documentation
