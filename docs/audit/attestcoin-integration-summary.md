@@ -95,7 +95,7 @@ Two distinct observations form the current lag corpus:
 | Observation | Source-block lag | Wall-clock observation |
 |---|---:|---:|
 | Probe window, 2026-08-19 | 32 to 41 | 6m24s to 8m24s |
-| First acceptance run | 39 to 42 | maximum 516 s |
+| First acceptance run, 2026-08-19 | 39 to 42 | maximum 516 s |
 
 The combined observed range is 32 to 42 source blocks. These are observations,
 not constants or an SLA. The grace calculation used `41` as its lag term.
@@ -115,9 +115,10 @@ these calls.
 | Batch `verify`, 10 heights | `401,427` estimated gas total; `40,143` per source transaction | maximum accepted batch, consistent with `MaxBatchSize = 10` |
 | Batch `verify`, 11 heights | rejected during estimation | `heights: Value is too large for length`; no mined revert |
 
-The former `~52,102` figure is excluded from the measured table. When used for
-the real Gateway transaction class, whose live encoded blob was 2,080 B, it is
-an extrapolation, not a measurement and not mined `gasUsed`.
+`ATTESTCOIN_INTEGRATION.md`'s `~52,102` extrapolation is excluded from the
+measured table. The value refers to the real Gateway transaction class, whose
+live encoded blob was 2,080 B; it is an extrapolation, not a measurement and not
+mined `gasUsed`.
 
 ### Historical v0.4.4 acceptance
 
@@ -129,7 +130,7 @@ superseded v0.4.4 `Cr3dXDeals` registry
 | v0.4.4 operation | Mined gasUsed | Roots | State transition |
 |---|---:|---:|---|
 | Funding `submitAndApply` | `334,222` | 10 | `CREATED` to `FINANCED` |
-| Permanent-refusal `submitAndApply` | `253,960` | 7 | `WRONG_INVESTOR` to `REJECTED_PERMANENT` |
+| Permanent-refusal `submitAndApply` | `253,960` | 7 | refused: `REJECTED_PERMANENT`, reason `WRONG_INVESTOR` |
 | Repayment `submitAndApply` | `340,088` | 9 | repayment applied; deal closed `PAID_ON_TIME` |
 
 ### S6 v0.4.8 acceptance
@@ -217,7 +218,7 @@ observed delta was exactly `33,744` in all three pairs. This comparison controls
 the source transactions and observes the changed proof path. It does not make
 elapsed time itself a gas-cost cause.
 
-Under the observed cadence, a prompt proof carried at most 11 roots and a
+Under the observed cadence, a prompt proof can carry at most 11 roots and a
 checkpoint-anchored proof at most 101, both below the 500-root ceiling. This is
 a cost and freshness objective, not a fact-expiry deadline or SLA.
 

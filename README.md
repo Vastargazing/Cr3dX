@@ -226,9 +226,12 @@ mode `0600`, inside a worker-owned non-writable-by-others directory. Manager mod
 requires direct inherited injection. Neither mode loads `.env` or calls
 `wallets:create`.
 
-No live S6 operation is authorized by the presence of this implementation. The
-configured Creditcoin contracts are an exact fresh v0.4.8 deployment; worker
-state-changing use still stops for `РАЗРЕШАЮ S6 LIVE`.
+S6 live acceptance completed successfully on testnets against the exact fresh
+v0.4.8 deployment, using a separate funded worker signer. The worker carried a
+repayment submitted before funding through `VERIFIED_PENDING`, then applied it
+with targeted `applyEvidence` after funding. In the external-submission race it
+reconciled the winning external submission without a worker signature or
+broadcast. Exact hashes, timing and gas are in [docs/STATUS.md](docs/STATUS.md).
 
 ## Reproducing the live S5 scenario
 
@@ -416,8 +419,12 @@ unfunded deals left 2.2 USDC reserved. Costs were measured, not estimated:
 The complete transcript and machine-readable report are
 `data/live/s5-fresh-2026-08-20T05-30-18-335Z.{log,json}`.
 
-For comparison, the earlier one-run path of 2026-08-19 measured these individual
-operations:
+For comparison, the earlier one-run path of 2026-08-19 was a historical v0.4.4
+run against registry `0x3360E0d2ff86BDd1B3b906c1AaB62E5bD5fc967c`.
+That deployment is superseded; raw evidence is
+`data/live/deal-2026-08-19T16-57-41-969Z.json`. The table compares operations
+inside that historical run only. It is not a before/after comparison with S6 or
+v0.4.8:
 
 | Operation | Chain | Gas | Continuity roots |
 |---|---|---:|---:|
@@ -491,9 +498,11 @@ address that is not the designated investor was refused permanently in the same
 run, and a counterfeit gateway event in an earlier one was ignored because its
 emitter was not the gateway.
 
-The permissionless proof worker is implemented and deterministically covered
-locally. Exact fresh v0.4.8 deployment provenance is established; its live
-acceptance still requires separate authorization and a dedicated funded worker
-signer. The demo interface follows after the worker's live cycle. Running detail,
-transaction hashes and measured gas are in
+The permissionless proof worker is implemented, deterministic coverage is
+complete, fresh v0.4.8 deployment provenance is established, and live acceptance
+completed successfully on testnets with a separate funded worker signer. The
+accepted cycle exercised repayment-before-funding through `VERIFIED_PENDING`,
+automatic targeted `applyEvidence` after funding, and external-submission
+reconciliation without a worker signature or broadcast. The demo interface is
+the next stage. Exact transaction hashes, timing and measured gas are in
 [docs/STATUS.md](docs/STATUS.md).
