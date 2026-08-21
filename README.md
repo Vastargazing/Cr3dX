@@ -79,9 +79,9 @@ anchor is the address.
 | Contract | Network | Address |
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
-| `Cr3dXVerifier` | Creditcoin3 Testnet | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
-| `Cr3dXDeals` | Creditcoin3 Testnet | `0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485` |
-| `Cr3dXCredit` | Creditcoin3 Testnet | `0x13AEC440a6cA605974Af15a9ef5B77EBC1442480` |
+| `Cr3dXVerifier` | Creditcoin3 Testnet | `0xED64f6157408f211dda43649129EaC1F73161093` |
+| `Cr3dXDeals` | Creditcoin3 Testnet | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` |
+| `Cr3dXCredit` | Creditcoin3 Testnet | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` |
 | `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
 
 An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
@@ -224,8 +224,8 @@ requires direct inherited injection. Neither mode loads `.env` or calls
 `wallets:create`.
 
 No live S6 operation is authorized by the presence of this implementation. The
-configured Creditcoin contracts must first be proven to be the exact v0.4.8
-deployment, and state-changing use still stops for `РАЗРЕШАЮ S6 LIVE`.
+configured Creditcoin contracts are an exact fresh v0.4.8 deployment; worker
+state-changing use still stops for `РАЗРЕШАЮ S6 LIVE`.
 
 ## Reproducing the live S5 scenario
 
@@ -269,16 +269,16 @@ Fund the public addresses that the command prints:
 - Creditcoin test CTC: use the EVM-address flow in the
   [official Creditcoin faucet guide](https://docs.creditcoin.org/wallets/using-testnet-faucet).
 
-The unchanged live anchors are explicit, because a symbol or a deployment-file
+The current live anchors are explicit, because a symbol or a deployment-file
 name is not an identifier:
 
 | Object | Address |
 |---|---|
 | Sepolia USDC | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` |
 | `Cr3dXGateway` | `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` |
-| `Cr3dXVerifier` | `0xAf07fCFe36079bD37E94f40f928EE8b088f56B47` |
-| current `Cr3dXDeals` | `0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485` |
-| current `Cr3dXCredit` | `0x13AEC440a6cA605974Af15a9ef5B77EBC1442480` |
+| `Cr3dXVerifier` | `0xED64f6157408f211dda43649129EaC1F73161093` |
+| current `Cr3dXDeals` | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` |
+| current `Cr3dXCredit` | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` |
 
 There are two deliberately different modes:
 
@@ -489,7 +489,8 @@ run, and a counterfeit gateway event in an earlier one was ignored because its
 emitter was not the gateway.
 
 The permissionless proof worker is implemented and deterministically covered
-locally. Its live acceptance remains gated on exact v0.4.8 deployment provenance
-and separate authorization; the demo interface follows after the worker's live
-cycle. Running detail, transaction hashes and measured gas are in
+locally. Exact fresh v0.4.8 deployment provenance is established; its live
+acceptance still requires separate authorization and a dedicated funded worker
+signer. The demo interface follows after the worker's live cycle. Running detail,
+transaction hashes and measured gas are in
 [docs/STATUS.md](docs/STATUS.md).

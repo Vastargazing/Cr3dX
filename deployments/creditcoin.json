@@ -4,9 +4,9 @@
   "chainKey": 1,
   "sourceChainId": 11155111,
   "sourceGateway": "0x11DD8a4c790939DEa8CED631dB27Afe54334a749",
-  "verifier": "0xAf07fCFe36079bD37E94f40f928EE8b088f56B47",
-  "verifierDeploymentTx": "0x921bfdf94b3152b1a23ccf7f61fd7c6607ea0986484ea282015585a551eeb1fe",
-  "verifierDeploymentBlock": 5336861,
+  "verifier": "0xED64f6157408f211dda43649129EaC1F73161093",
+  "verifierDeploymentTx": "0xb37784b964bfb1cc7e4fd90f25dcb014a61415641c595fb83e8db7cdbbe4d37b",
+  "verifierDeploymentBlock": 5347321,
   "deployedBy": "0x0e4Fbc156afdd9271267E64F11CDba99747156C6",
   "previousVerifiers": [
     {
@@ -15,6 +15,13 @@
       "verifierDeploymentBlock": 5336695,
       "supersededAt": "2026-08-19T14:52:09.511Z",
       "reason": "the first deployment landed on the same address as the Sepolia gateway, because the deployer used nonce 0 on both chains; identical addresses make a misconfigured deployment visually indistinguishable from a correct one"
+    },
+    {
+      "verifier": "0xAf07fCFe36079bD37E94f40f928EE8b088f56B47",
+      "verifierDeploymentTx": "0x921bfdf94b3152b1a23ccf7f61fd7c6607ea0986484ea282015585a551eeb1fe",
+      "verifierDeploymentBlock": 5336861,
+      "supersededAt": "2026-08-21T07:31:05.129Z",
+      "reason": "S6 v0.4.8: fresh verifier required for bytecode provenance before worker live acceptance"
     }
   ],
   "previousDeals": [
@@ -33,12 +40,20 @@
       "dealsDeploymentBlock": 5337276,
       "supersededAt": "2026-08-20T04:52:19.115Z",
       "reason": "S5 fresh mode: prove the complete scenario from score 500 and empty history"
+    },
+    {
+      "deals": "0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485",
+      "credit": "0x13AEC440a6cA605974Af15a9ef5B77EBC1442480",
+      "dealsDeploymentTx": "0xd5ed5e5bc8339c71e1196d432bedc6a0007f290fc4e6f6ea91dc49ed8335bfdf",
+      "dealsDeploymentBlock": 5340937,
+      "supersededAt": "2026-08-21T07:32:06.086Z",
+      "reason": "S6 v0.4.8: fresh Deals/Credit state required before worker live acceptance"
     }
   ],
-  "deals": "0x80a9AE89DaD31A5AB5b3a6374F8159544ba59485",
-  "credit": "0x13AEC440a6cA605974Af15a9ef5B77EBC1442480",
-  "dealsDeploymentTx": "0xd5ed5e5bc8339c71e1196d432bedc6a0007f290fc4e6f6ea91dc49ed8335bfdf",
-  "dealsDeploymentBlock": 5340937,
+  "deals": "0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC",
+  "credit": "0x4a66732cA5B7f081585693332C79e636CE9c05C8",
+  "dealsDeploymentTx": "0xbbf95613e9f4152f49e4462cdfebdf3655e696bc3ae16114822665617bf891db",
+  "dealsDeploymentBlock": 5347325,
   "baseLimit": "5000000000",
   "attestationGracePeriod": 600
 }

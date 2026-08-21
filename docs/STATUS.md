@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-08-21 — fresh v0.4.8 deployment для S6 подтверждён
+
+После буквального `РАЗРЕШАЮ S6 DEPLOY V0.4.8` на Creditcoin3 Testnet 102031
+последовательно развёрнуты свежие контракты из текущих v0.4.8 артефактов:
+
+| Контракт | Адрес | Транзакция | Блок |
+|---|---|---|---:|
+| `Cr3dXVerifier` | `0xED64f6157408f211dda43649129EaC1F73161093` | `0xb37784b964bfb1cc7e4fd90f25dcb014a61415641c595fb83e8db7cdbbe4d37b` | 5347321 |
+| `Cr3dXDeals` | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` | `0xbbf95613e9f4152f49e4462cdfebdf3655e696bc3ae16114822665617bf891db` | 5347325 |
+| `Cr3dXCredit` | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` | создан внутри транзакции `Cr3dXDeals` | 5347325 |
+
+Обе deployment-квитанции имеют `status = 1`. Creation calldata в обеих
+транзакциях побайтно совпадает с локальными артефактами и аргументами, а runtime
+`Verifier`, `Deals` и `Credit` совпадает после маскирования immutable-областей.
+Wiring прочитан обратно с chain: verifier доверяет Sepolia gateway
+`0x11DD8a4c790939DEa8CED631dB27Afe54334a749` и `chainKey = 1`; Deals указывает на
+новый verifier и новый Credit; Credit указывает обратно на новый Deals.
+
+Состояние свежее: `dealCount = 0`, для проверенных адресов score 500, limit и
+available limit `5_000_000_000`, reserve и exposure равны нулю. Два deployment
+израсходовали 3 938 214 gas и `0.001969107 CTC`; остаток deployer после включения
+обоих блоков — `9999.9789024945 CTC`. Старые адреса сохранены в массивах
+`previousVerifiers` и `previousDeals` с причинами замены.
+
+Существующий Sepolia Gateway не передеплоен и не изменён: read-only проверка
+подтвердила прежний deployment receipt, точное creation calldata, token
+`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` и event nonce 25.
+
+Это закрывает deployment provenance gate, но не разрешает работу worker. Отдельный
+worker signer пока не настроен и его CTC-баланс не установлен; deployer молча не
+переиспользуется. Push, worker bootstrap, proof submission и иные продуктовые
+транзакции не выполнялись. Следующий state-changing gate остаётся буквальным
+`РАЗРЕШАЮ S6 LIVE` после создания и пополнения выделенного worker signer.
+
 ## 2026-08-21 — S6 worker реализован локально, live gate не открыт
 
 Единственный нормативный вход реализации — document-only коммит
@@ -48,9 +82,9 @@
   256 campaigns × 500 calls, суммарно 896 000 handler calls, плюс fuzz-свойство;
 - `git diff --check` и guards неизменности нормативной спеки/контрактов — чисто.
 
-Live RPC, транзакции, deploy и push в этой реализации не выполнялись. Текущие S5
-адреса не объявлены v0.4.8 deployment. До отдельного `РАЗРЕШАЮ S6 LIVE` worker не
-запускается против live сетей.
+Live RPC, транзакции, deploy и push в implementation-коммите не выполнялись.
+Позднейший fresh v0.4.8 deployment записан отдельным разделом выше. До отдельного
+`РАЗРЕШАЮ S6 LIVE` worker не запускается против live сетей.
 
 ---
 
