@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync, readdirSync} from 'node:fs';
 import test from 'node:test';
-import {Interface, type FunctionFragment} from 'ethers';
+import {Contract, Interface, type FunctionFragment, type TransactionRequest} from 'ethers';
 import type {SingleProof} from '../scripts/lib/proofs.js';
 import {WorkerChain, type RawSourceReceipt} from './chain.js';
 import type {Hex, WorkerConfig} from './types.js';
@@ -47,6 +47,64 @@ test('coverage 46: matching gateway/topic with a non-canonical shape fails loudl
     logs: [{address: gateway, topics: [config().fundingTopic, dealId], data: '0x', logIndex: 1, transactionHash: txHash}],
   };
   assert.throws(() => chain.decodeGatewayEvents(receipt), /SHAPE_MISMATCH/);
+});
+
+test('production dealView decodes the actual ethers-v6 single-tuple return shape', async () => {
+  const dealAbi = [
+    'function getDeal(bytes32 dealId) view returns ((address borrower,uint64 dueBlock,uint8 status,address designatedInvestor,uint96 dealSeq,address investor,uint256 requiredFunding,uint256 fundedAmount,uint256 faceValue,uint256 repaidAmount,uint256 onTimeRepaid))',
+  ];
+  const dealIface = new Interface(dealAbi);
+  const encodedResult = dealIface.encodeFunctionResult('getDeal', [[
+    borrower,
+    123n,
+    2,
+    investor,
+    7n,
+    investor,
+    100n,
+    100n,
+    110n,
+    0n,
+    0n,
+  ]]);
+  const calls: string[] = [];
+  const runner = {
+    provider: null,
+    call: async (request: TransactionRequest): Promise<string> => {
+      if (typeof request.data !== 'string') throw new Error('expected hex calldata');
+      calls.push(request.data);
+      return encodedResult;
+    },
+  };
+  const chain = new WorkerChain(config());
+  Object.defineProperty(chain, 'deals', {
+    value: new Contract(config().dealsAddress, dealAbi, runner),
+  });
+
+  const actual = await chain.dealView(dealId);
+
+  assert.equal(calls.length, 1);
+  assert.equal(dealIface.parseTransaction({data: calls[0]!})?.name, 'getDeal');
+  assert.deepEqual(actual, {status: 2, designatedInvestor: investor});
+});
+
+test('production runtimeIntervals rejects a malformed SCALE u64 instead of coercing null to zero', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (_input, init): Promise<Response> => {
+    const request = JSON.parse(String(init?.body)) as {params: string[]};
+    const result = request.params[0] === 'AttestorApi_chain_attestation_interval'
+      ? '0x'
+      : '0x0a000000';
+    return new Response(JSON.stringify({jsonrpc: '2.0', id: 1, result}), {
+      status: 200,
+      headers: {'content-type': 'application/json'},
+    });
+  };
+  try {
+    await assert.rejects(new WorkerChain(config()).runtimeIntervals(), /malformed SCALE values/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('coverage 30: production signing surface derives to exactly submitAndApply and applyEvidence', () => {

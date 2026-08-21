@@ -219,8 +219,9 @@ export class WorkerChain {
   }
 
   async dealView(dealId: Hex): Promise<DealView> {
-    const result = await this.deals.getFunction('getDeal')(dealId);
-    const deal = result[0] ?? result;
+    // ethers v6 unwraps a function's sole tuple return into the tuple Result
+    // itself. `result[0]` is therefore the borrower address, not an outer tuple.
+    const deal = await this.deals.getFunction('getDeal')(dealId);
     return {status: Number(deal.status ?? deal[2]), designatedInvestor: getAddress(deal.designatedInvestor ?? deal[3]) as Hex};
   }
 
@@ -358,9 +359,13 @@ export class WorkerChain {
         key,
       ]),
     ]);
-    const attestationInterval = Number(decodeScaleU64(attestationRaw));
+    const decodedAttestationInterval = decodeScaleU64(attestationRaw);
     const checkpointInterval = decodeScaleU32(checkpointRaw);
-    if (!Number.isSafeInteger(attestationInterval) || checkpointInterval === null) {
+    if (decodedAttestationInterval === null || checkpointInterval === null) {
+      throw new Error('Runtime interval RPC returned malformed SCALE values');
+    }
+    const attestationInterval = Number(decodedAttestationInterval);
+    if (!Number.isSafeInteger(attestationInterval)) {
       throw new Error('Runtime interval RPC returned malformed SCALE values');
     }
     return {attestationInterval, checkpointInterval};

@@ -6,6 +6,75 @@
 
 ---
 
+## 2026-08-21 — S6 ABI decode blocker исправлен, live остаётся остановлен
+
+После буквального `РАЗРЕШАЮ S6 LIVE` создан отдельный testnet-only worker signer
+`0x16046B2b4FaE88f3D02264EAbbD24dC04912d2Bd`. Ключ хранится только во внешнем
+regular-файле `0600` внутри каталога `0700`; checkout-local `.env` worker не
+использует. Signer пополнен на `0.02 CTC` транзакцией
+`0xf81d2ab073d69e2b6de67aeb2ec1d3c821b13d68e5514e1a90ae9a1b84b846ef`
+в блоке 5347363. Bootstrap записал nonce 0, lane открыт, envelopes и фактические
+worker-комиссии отсутствуют.
+
+Для live-сценария borrower создал сделку
+`0x5cf1f030363c28c3fa1862759ccc63b338d0a57fd682d9a6965a61acf93706fc`
+транзакцией
+`0xefd4dc75cacbffd1c232e595c50b7cc910cdcc4466818c2b9f935ac8b65169e8`:
+designated investor A, required funding `1_000_000`, face value `1_100_000`,
+due source block 11535634. Обычный enrollment эффективен с Sepolia-блока
+11534638. Погашение намеренно отправлено до финансирования транзакцией
+`0xe90b91457786d4e89104e157c746b2d8ec8d91b9462321602c96591a6c2d72ec`
+в блоке 11534643; его evidence ID —
+`0x65f1d8a980b49ec20510b047473785ebcfd6648c0d4cfafd3857241b9c8df213`.
+Attestcoin достиг 11534650 за 501 секунду, proof построен свежим и
+`submitAndApply` успешно прошёл `eth_call`.
+
+Полный preflight перед первой worker-подписью показал signer nonce `0/0`, баланс
+`0.02 CTC`, runtime intervals `10/10`, пустые queue/reservation/rolling fees и
+открытую lane. Оценка intended `submitAndApply`: 282 203 gas, финальный gas limit
+338 644, maximum liability `0.000338644 CTC` при cap 1 gwei; все policy caps
+соблюдены.
+
+Preflight выявил достижимый implementation blocker в `WorkerChain.dealView()`.
+Непосредственная причина: ethers v6 возвращает единственный tuple `getDeal` уже
+развёрнутым, поэтому `result[0]` является borrower address. Код ошибочно делал
+`result[0] ?? result`, принимал строку адреса за tuple и читал её символы
+`"7"`/`"3"` как status/investor; `getAddress("3")` падал. Системная причина:
+engine tests использовали `FakeChain.dealView()` и обходили production adapter,
+а прежние `worker/chain.test.ts` проверяли gateway-log decoding и signing surface,
+но не фактическую ethers-v6 форму contract returns.
+
+После отдельного `РАЗРЕШАЮ S6 ABI FIX` лишний unwrap удалён. Regression строит
+ABI-encoded `getDeal` result, пропускает его через настоящий ethers `Contract` и
+вызывает production `WorkerChain.dealView()`. Он проверяет точные status и
+designated investor и падает на прежнем мутанте с тем же `invalid address`.
+
+Все остальные structured reads `WorkerChain` проверены на форму ответа. Второго
+unwrap/indexing defect не найдено: `evidenceStateOf` возвращает два отдельных
+значения и правильно индексируется; gateway log `Result`, raw receipt/log arrays,
+proof-builder JSON, fee/receipt/block objects и набор deployment getters читаются
+согласно своим фактическим API shapes. Аудит нашёл отдельный fail-closed дефект в
+Substrate SCALE read: `decodeScaleU64("0x")` возвращает `null`, но прежний
+`Number(null)` превращал malformed response в допустимый interval 0. Проверка
+`null` теперь предшествует числовому преобразованию; regression вызывает
+production `runtimeIntervals()` через JSON-RPC fetch и убивает прежний coercion.
+
+Известное отклонение покрытия остаётся: прямых adapter-level тестов пока нет для
+raw `eth_getTransactionReceipt`, ethers Log/Receipt/Block/FeeData,
+proof-builder JSON, положительной формы Substrate runtime response и
+агрегированного deployment readback. Engine safety для них проверяется через
+FakeChain, но это не проверка границы библиотек.
+
+После обоих adapter fixes последовательно выполнены только разрешённые проверки:
+`npm run test:worker` — 6/6 test-файлов, `npm run typecheck` — чисто,
+`git diff --check` — чисто. Forge и solc не запускались.
+
+Live остаётся остановлен до отдельного разрешения на возобновление. Worker ничего
+не подписывал и не отправлял: signer nonce остаётся 0, evidence `UNSEEN`, deal
+остаётся `CREATED`, exact envelope отсутствует. Исходную repayment-транзакцию
+повторять нельзя; тот же сохранённый enrollment и source hash достаточны для
+безопасного продолжения.
+
 ## 2026-08-21 — fresh v0.4.8 deployment для S6 подтверждён
 
 После буквального `РАЗРЕШАЮ S6 DEPLOY V0.4.8` на Creditcoin3 Testnet 102031
