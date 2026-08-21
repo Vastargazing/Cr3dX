@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A read-only view of Cr3dX verified cross-chain credit on Creditcoin testnet."
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>Cr3dX / Verified Credit</title>
+  </head>
+  <body>
+    <div class="ambient-grid" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow--one" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow--two" aria-hidden="true"></div>
+
+    <header class="site-header shell">
+      <a class="brand" href="#outcome" aria-label="Cr3dX outcome">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="brand-word">Cr3dX</span>
+        <span class="brand-divider">/</span>
+        <span class="brand-context">verified credit</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Page navigation">
+        <a href="#outcome">Outcome</a>
+        <a href="#economic-state">Economics</a>
+        <a href="#timeline">Timeline</a>
+        <a href="#worker">Worker</a>
+        <a href="#verification">Verification</a>
+      </nav>
+
+      <div class="read-only-badge" title="This interface has no signing path">
+        <span class="status-dot"></span>
+        Read-only
+      </div>
+    </header>
+
+    <main>
+      <section id="outcome" class="hero shell" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span>Creditcoin testnet</span>
+            <span class="eyebrow-separator">/</span>
+            <span>Chain ID 102031</span>
+          </div>
+          <p class="supporting-phrase">Credit truth, proven across chains.</p>
+          <h1 id="hero-title">Credit history that follows the borrower across chains</h1>
+          <p class="hero-intro">
+            Money moves on Ethereum. Credit state lives on Creditcoin.<br />
+            Attestcoin is the only thing that connects them, and anyone can submit the proof.
+          </p>
+          <div class="hero-actions">
+            <button id="refresh-button" class="refresh-button" type="button">
+              <span class="refresh-symbol" aria-hidden="true">↻</span>
+              <span>Verify live state</span>
+            </button>
+            <a id="deal-explorer-link" class="text-link" href="#">
+              Open deployment <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+
+        <article class="deal-terminal" aria-labelledby="deal-heading">
+          <div class="terminal-topline">
+            <div>
+              <span class="terminal-label">Accepted snapshot</span>
+              <h2 id="deal-heading">Settlement record</h2>
+            </div>
+            <span class="source-badge">2026-08-21</span>
+          </div>
+
+          <div class="deal-identity">
+            <span class="deal-hash-label">DEAL ID</span>
+            <code>0x5cf1…06fc</code>
+            <a id="deals-contract-link" href="#" aria-label="Open Deals contract in explorer">↗</a>
+          </div>
+
+          <div class="deal-outcome">
+            <div class="outcome-copy">
+              <span class="outcome-kicker">Canonical outcome</span>
+              <strong id="deal-status">PAID_ON_TIME</strong>
+              <span>Outstanding balance cleared</span>
+            </div>
+            <div id="score-transition" class="score-orbit" aria-label="Credit score increased from 500 to 525">
+              <span class="score-old">500 →</span>
+              <strong>525</strong>
+              <span class="score-label">score</span>
+            </div>
+          </div>
+
+          <dl class="terminal-ledger">
+            <div>
+              <dt>Funding evidence</dt>
+              <dd><span class="value-ok">APPLIED</span></dd>
+            </div>
+            <div>
+              <dt>Repayment evidence</dt>
+              <dd><span class="value-ok">APPLIED</span></dd>
+            </div>
+            <div>
+              <dt>Exposure</dt>
+              <dd><span class="value-ok">0</span></dd>
+            </div>
+          </dl>
+
+          <div class="terminal-footer snapshot-provenance">
+            <span>Accepted snapshot · 2026-08-21</span>
+            <a id="commit-link" href="#"><code>f359c54c5647841a08e4e66dec267cf4cbeb110d</code> ↗</a>
+          </div>
+        </article>
+
+        <div class="first-fold-summary">
+          <div class="fold-metrics" aria-label="Accepted snapshot economic summary">
+            <article id="fold-limit" class="fold-metric">
+              <span>Credit limit</span>
+              <strong><s>5,000</s> → 5,250 <small>USDC</small></strong>
+            </article>
+            <article id="fold-exposure" class="fold-metric">
+              <span>Exposure</span>
+              <strong>0 <small>USDC</small></strong>
+            </article>
+            <article id="fold-repaid" class="fold-metric">
+              <span>Repaid</span>
+              <strong>1.1 / 1.1 <small>USDC</small></strong>
+            </article>
+            <article id="fold-worker" class="fold-metric fold-metric--worker">
+              <span>External race ·</span>
+              <strong>worker signatures 0 · broadcasts 0</strong>
+            </article>
+          </div>
+
+          <aside id="live-observation-panel" class="live-observation" data-state="idle" aria-live="polite">
+            <div class="live-heading">
+              <span>Live RPC observation</span>
+              <strong id="live-state-label">Checking…</strong>
+            </div>
+            <dl>
+              <div><dt>Destination block</dt><dd id="live-block">—</dd></div>
+              <div><dt>Local read time</dt><dd id="live-time">—</dd></div>
+            </dl>
+            <p id="live-comparison">Accepted snapshot remains frozen while the public read completes.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="economic-state" class="metrics-section shell" aria-labelledby="metrics-title">
+        <div class="section-heading section-heading--compact">
+          <div>
+            <span class="section-index">02 / ECONOMIC STATE</span>
+            <h2 id="metrics-title">One deal, fully accounted for</h2>
+          </div>
+          <div class="snapshot-chip">
+            <span></span>
+            Accepted snapshot · 2026-08-21 · <code>f359c54</code>
+          </div>
+        </div>
+
+        <p class="economics-note">
+          <span aria-hidden="true">↳</span>
+          A deliberately small testnet demonstration deal; the credit limit is protocol state,
+          not the chosen transaction size.
+        </p>
+
+        <div class="metrics-grid">
+          <article class="metric-card metric-card--hero">
+            <span class="metric-label">Credit limit</span>
+            <strong>5,250</strong>
+            <span class="metric-unit">USDC</span>
+            <div class="limit-change"><span>5,000</span><span class="change-line"><i></i></span><span class="change-positive">+5%</span></div>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Funded</span>
+            <strong>1.000001</strong>
+            <span class="metric-unit">USDC</span>
+            <span class="metric-note">Includes 1-unit surplus race</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Repaid on time</span>
+            <strong>1.1</strong>
+            <span class="metric-unit">USDC</span>
+            <span class="metric-note">Face value fully cleared</span>
+          </article>
+          <article class="metric-card metric-card--zero">
+            <span class="metric-label">Exposure</span>
+            <strong>0</strong>
+            <span class="metric-unit">USDC</span>
+            <span class="metric-note"><i></i> No open debt</span>
+          </article>
+          <article class="metric-card metric-card--zero">
+            <span class="metric-label">Outstanding</span>
+            <strong>0</strong>
+            <span class="metric-unit">USDC</span>
+            <span class="metric-note"><i></i> Settled</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="timeline" class="timeline-section shell" aria-labelledby="timeline-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-index">03 / TIMELINE</span>
+            <h2 id="timeline-title">Observed acceptance intervals</h2>
+          </div>
+          <p>Four preserved source-to-destination observations from the accepted run.</p>
+        </div>
+        <ol class="acceptance-timeline">
+          <li><span class="timeline-index">01</span><strong>1,734 s</strong><p>Repayment source → verifier submission</p></li>
+          <li><span class="timeline-index">02</span><strong>720 s</strong><p>Funding source → worker submission</p></li>
+          <li><span class="timeline-index">03</span><strong>2,799 s</strong><p>Repayment source → final <code>applyEvidence</code></p></li>
+          <li><span class="timeline-index">04</span><strong>651 s</strong><p>Race source → external submission</p></li>
+        </ol>
+        <p class="timeline-boundary">
+          Observed during one testnet acceptance run. Not an SLA.<br />
+          Exact attested-height transition timestamps were not recorded.
+        </p>
+      </section>
+
+      <section id="worker" class="worker-section shell" aria-labelledby="worker-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-index">04 / WORKER</span>
+            <h2 id="worker-title">Permissionless, durable, race-safe</h2>
+          </div>
+          <p>The worker advances public evidence. It has no privileged contract role.</p>
+        </div>
+        <div class="worker-grid">
+          <article>
+            <span class="worker-step">A</span>
+            <h3>Repayment waits safely</h3>
+            <p>Repayment arrived before funding and remained <code>VERIFIED_PENDING</code>, without being rejected or applied early.</p>
+          </article>
+          <article>
+            <span class="worker-step">B</span>
+            <h3>Funding unlocks application</h3>
+            <p>After funding, the worker automatically completed the stored repayment through addressed <code>applyEvidence</code>.</p>
+          </article>
+          <article class="worker-race-card">
+            <span class="worker-step">C</span>
+            <h3>External submission wins</h3>
+            <p>The worker reconciled semantic success without creating an envelope.</p>
+            <strong>worker signatures 0 · broadcasts 0</strong>
+          </article>
+        </div>
+        <a id="phase-b-link" class="phase-b-badge" href="#">
+          <span class="phase-b-mark" aria-hidden="true">B</span>
+          <span>
+            <strong>Independent model × implementation: 63/63 matched</strong>
+            <small>16 independently-derived + 47 specification-prescribed</small>
+          </span>
+          <span class="phase-b-arrow" aria-hidden="true">↗</span>
+        </a>
+      </section>
+
+      <section id="verification" class="proof-section shell" aria-labelledby="proof-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-index">05 / VERIFICATION</span>
+            <h2 id="proof-title">From payment to credit state</h2>
+          </div>
+          <p>Settlement stays on Ethereum. A public proof crosses the boundary. Creditcoin records only the verified result.</p>
+        </div>
+        <ol class="proof-flow">
+          <li class="proof-node proof-node--source">
+            <div class="node-topline"><span class="node-number">01</span><span class="network-pill network-pill--sepolia">Sepolia</span></div>
+            <div class="node-icon" aria-hidden="true">ETH</div>
+            <h3>Gateway event</h3>
+            <p>A successful configured Gateway call emits funding or repayment evidence.</p>
+            <a id="source-transaction-link" class="node-proof-link" href="#"><code>0xe90b…d72ec</code><span>↗</span></a>
+          </li>
+          <li class="flow-connector" aria-hidden="true"><span class="flow-line"></span><span class="flow-packet">proof</span></li>
+          <li class="proof-node proof-node--proof">
+            <div class="node-topline"><span class="node-number">02</span><span class="network-pill">Attestcoin</span></div>
+            <div class="node-icon" aria-hidden="true">✓</div>
+            <h3>Canonical proof</h3>
+            <p>Inclusion, successful receipt, configured event and continuity are verified.</p>
+            <span class="node-proof-link"><code>8 roots · anchor 11,534,650</code></span>
+          </li>
+          <li class="flow-connector" aria-hidden="true"><span class="flow-line"></span><span class="flow-packet">apply</span></li>
+          <li class="proof-node proof-node--destination">
+            <div class="node-topline"><span class="node-number">03</span><span class="network-pill network-pill--creditcoin">Creditcoin</span></div>
+            <div class="node-icon" aria-hidden="true">525</div>
+            <h3>Credit outcome</h3>
+            <p>Verified facts and attested source height deterministically produce credit state.</p>
+            <a id="credit-contract-link" class="node-proof-link" href="#"><code>0x4a66…05C8</code><span>↗</span></a>
+          </li>
+        </ol>
+        <div class="proof-caption">
+          <span class="caption-mark">i</span>
+          <p>Repayment arrived first and waited as <strong>VERIFIED_PENDING</strong>. Funding later made it applicable; the worker called <code>applyEvidence</code> without resubmitting the proof.</p>
+        </div>
+      </section>
+
+      <section id="evidence" class="evidence-section shell" aria-labelledby="evidence-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-index">05.1 / RECEIPTS</span>
+            <h2 id="evidence-title">Every state change has a receipt</h2>
+          </div>
+          <p>Exact destination transactions from the accepted S6 testnet run. Gas and proof shape are observations, not guarantees.</p>
+        </div>
+        <div class="evidence-table-wrap">
+          <table>
+            <thead><tr><th scope="col">Operation</th><th scope="col">Call</th><th scope="col">Proof shape</th><th scope="col">Gas used</th><th scope="col">Receipt</th></tr></thead>
+            <tbody id="evidence-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="integrity-section shell" aria-labelledby="integrity-title">
+        <div class="integrity-panel">
+          <div class="section-heading section-heading--compact">
+            <div><span class="section-index">05.2 / TRUST BOUNDARY</span><h2 id="integrity-title">Read the boundary, not the promise</h2></div>
+          </div>
+          <div class="trust-explanation">
+            <p>Attestcoin proves that the source transaction was included, succeeded, and emitted our configured Gateway event.</p>
+            <p>The token transfer follows from the verified Gateway code, which emits that event only after a successful transfer.</p>
+            <p>The credit outcome follows from those verified facts and the attested source height.</p>
+          </div>
+          <div class="integrity-columns">
+            <article class="integrity-list integrity-list--proven">
+              <span class="integrity-kicker">What is proven</span>
+              <ul>
+                <li><span>✓</span> Source transaction inclusion and success</li>
+                <li><span>✓</span> Configured Gateway event and source height</li>
+                <li><span>✓</span> Deterministic deal and credit transitions</li>
+                <li><span>✓</span> Permissionless worker reconciliation</li>
+              </ul>
+            </article>
+            <article class="integrity-list integrity-list--excluded">
+              <span class="integrity-kicker">What is not proven</span>
+              <ul>
+                <li><span>×</span> Authenticity of the invoice or off-chain obligation</li>
+                <li><span>×</span> Legal enforceability</li>
+                <li><span>×</span> Borrower identity</li>
+                <li><span>×</span> Sybil resistance</li>
+                <li><span>×</span> Forced collection or escrow enforcement</li>
+                <li><span>×</span> Production mainnet readiness</li>
+                <li><span>×</span> Testnet timing as an SLA</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <aside class="deployment-panel" aria-labelledby="deployment-title">
+          <div class="deployment-heading"><span class="section-index">DEPLOYMENT / v0.4.8</span><span class="deployment-verified">Bytecode matched</span></div>
+          <h2 id="deployment-title">Fresh testnet provenance</h2>
+          <dl>
+            <div><dt>Gateway · Sepolia</dt><dd><a id="gateway-link" href="#"><code>0x11DD…a749</code> ↗</a></dd></div>
+            <div><dt>Verifier · Creditcoin</dt><dd><a id="verifier-link" href="#"><code>0xED64…1093</code> ↗</a></dd></div>
+            <div><dt>Deals · Creditcoin</dt><dd><a id="deployment-deals-link" href="#"><code>0x8f7B…A3cC</code> ↗</a></dd></div>
+            <div><dt>Credit · Creditcoin</dt><dd><a id="deployment-credit-link" href="#"><code>0x4a66…05C8</code> ↗</a></dd></div>
+          </dl>
+          <p class="deployment-note">Runtime bytecode and constructor wiring were read back from chain and matched to the v0.4.8 build artifacts.</p>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="site-footer shell">
+      <div><span class="brand-word">Cr3dX</span><span>Verified cross-chain credit · Testnet demonstration</span></div>
+      <div class="footer-links">
+        <a id="status-doc-link" href="#">Acceptance evidence ↗</a>
+        <a id="spec-doc-link" href="#">Normative S6 spec ↗</a>
+        <span>No wallet · No signing · No state changes</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

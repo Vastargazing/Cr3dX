@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-08-21 — read-only dashboard repair-pass завершён, commit запрещён до приёмки
+
+На ветке `ui/read-only-dashboard` добавлена одна desktop-first vanilla
+TypeScript/Vite страница для объяснения уже принятой системы. Порядок страницы
+теперь явный: Outcome, Economic state, Timeline, Worker, Verification. Proof path,
+receipt table, deployment provenance и trust boundary сохранены внутри
+Verification. Contracts, worker, deployments, live evidence, audit reports и
+нормативные спецификации не менялись.
+
+Главный provenance blocker закрыт архитектурно. Accepted snapshot от
+`2026-08-21` на evidence commit
+`f359c54c5647841a08e4e66dec267cf4cbeb110d` является статическим содержимым
+страницы; production RPC renderer не пишет ни в одно его поле. Отдельная Live RPC
+observation показывает destination block, локальное время чтения и точные
+различия либо `MATCH`. Последующий transport failure оставляет предыдущее
+успешное наблюдение только как `STALE`, с исходными block/time; без предыдущего
+успеха live panel становится `UNAVAILABLE`. Ни одно live значение не получает
+метку snapshot.
+
+Regression выполняет последовательность frozen snapshot -> отличающийся live
+success -> forced RPC failure. Он требует побайтно неизменный snapshot, сохранение
+старых successful block/time и состояние `STALE`. Убитый мутант — прежний
+`refreshLiveState()`, который перезаписывал snapshot-поля live значениями, а при
+ошибке возвращал только подпись `Snapshot`, не возвращая frozen значения.
+
+Первый экран проверен при реальном viewport `1440x900`, `scrollY = 0`. Все шесть
+обязательных значений полностью видимы:
+
+| Значение | Вертикальные координаты, px |
+|---|---:|
+| `PAID_ON_TIME` | 318–355 |
+| score `500 -> 525` | 281–397 |
+| limit `5,000 -> 5,250 USDC` | 562–666 |
+| exposure `0 USDC` | 562–666 |
+| repaid `1.1 / 1.1 USDC` | 562–666 |
+| external race: worker signatures `0`, broadcasts `0` | 562–666 |
+
+При `390x844` compact header заканчивается на `73 px`, snapshot card начинается
+на `91 px`, а `PAID_ON_TIME` виден на `259–281 px`, до headline, который
+начинается на `541 px`. Горизонтального overflow после удаления mobile glow нет.
+
+Фактический read-only RPC smoke прочитал Creditcoin destination block `5348994`
+и вернул `MATCH` со snapshot. Ключи, wallet API и signing path не использовались.
+Timeline показывает только сохранённые интервалы `1734 s`, `720 s`, `2799 s` и
+`651 s`, с явной пометкой one-run/not-SLA и без реконструкции неизвестных
+attested-height transition timestamps. Trust boundary отдельно говорит, что
+Attestcoin доказывает inclusion, успешный receipt и настроенное Gateway event;
+сам token transfer следует из проверенного Gateway code, а credit outcome — из
+этих фактов и attested source height.
+
+Vite настроен с `base: "./"`. Production `index.html` содержит только
+`./assets/...`; browser smoke успешно загрузил HTML, CSS, JS и четыре receipt rows
+как из production preview `/`, так и из временного static subpath `/Cr3dX/`.
+
+Последовательно прошли `npm run typecheck`, `npm run ui:typecheck`,
+`npm run test:ui`, `npm run ui:build`; production build: HTML `18.30 kB`, CSS
+`31.26 kB`, JS `264.16 kB` до gzip. Forge и solc не запускались. Коммит и push не
+выполнялись: работа остановлена для повторной визуальной приёмки.
+
 ## 2026-08-21 — S6 live acceptance завершена на v0.4.8
 
 Live продолжен только после adapter-fix коммита
