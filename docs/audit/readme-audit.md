@@ -233,3 +233,54 @@ env -u NODE_TLS_REJECT_UNAUTHORIZED NODE_USE_ENV_PROXY=1 npm run probe
 `s5:resume`, `capture:fixtures`, `capture:gate`, `probe`, `verify:live` и любые
 другие команды, читающие live RPC или отправляющие testnet-транзакции. `.env`,
 ключи, `deployments/` и `worker/` не изменялись.
+
+## Follow-up 2026-08-21: remediation verification
+
+Статус: **CLOSED — все девять находок устранены.** Исходная рецензия выше
+сохранена как исторический документ и не переписана.
+
+Remediation base:
+`4cbccf6ca62e1542ad556e36ab55b4176217d8f7` (`Fix wallet env persistence and
+close README audit`). Этот полный hash указывает на implementation + README
+commit и не зависит от document-only closure ниже.
+
+### Mapping findings 1..9
+
+| Finding | Статус | Исправленная семантика и provenance | Различающая проверка |
+|---:|---|---|---|
+| 1 | CLOSED | `README.md:159-198` разделяет local/read-only setup без `.env` и два взаимоисключающих live credential mode; `README.md:275-304` даёт безопасный new-checkout symlink path без безусловного удаления или overwrite существующего файла. | В README больше нет безусловного `cp .env.example .env`; перед созданием symlink проверяются и обычный path, и dangling link. Локальные Markdown links проверены на существование. |
+| 2 | CLOSED | `scripts/lib/env-persistence.ts:83-273` разрешает regular/symlink target, проверяет POSIX owner/mode/parent, заранее пробует exclusive sibling + rename, повторно сверяет target и атомарно заменяет только real target. `scripts/create-wallets.ts:70-100` — тонкий importable CLI boundary. Поведение документировано в `README.md:294-304`. | `scripts/lib/env-persistence.test.ts:43-254`: 13/13 случаев. Killed mutant: прежний `rename(tempPath, '.env')` заменил бы symlink regular-файлом, поэтому упал бы на assertions `lstat(envPath).isSymbolicLink()`, неизменный `readlink` и наличие новых данных только в target (`:68-107`). Отдельно проверены dangling/non-regular targets, owner/parent permissions, invalid/duplicate keys и cleanup до rename. |
+| 3 | CLOSED | `README.md:351-357` даёт точные integrated read-only `fresh`/`continue --preflight-only`; `README.md:440-466` отделяет read-only legacy `preflight` от state-changing `capture:gate` fixture path. | Поддержка аргументов подтверждена `scripts/lib/s5-plan.ts:15-49` и table-driven CLI cases `scripts/lib/s5-plan.test.ts:5-28`; helper fixture больше не назван integrated S5 preflight. |
+| 4 | CLOSED | `README.md:332-341` до команды перечисляет deployment transaction, новую Deals/Credit pair, tracked diff, перенос старой пары в `previousDeals`, current addresses и обязательную проверку diff после успеха/прерывания. | Сверено с фактической веткой `deployFreshRegistry()` в `scripts/deal-live.ts:442` и записью deployment helper; в remediation run deployment record не менялся. |
+| 5 | CLOSED | `README.md:377-429` объясняет получение deal ID из `DealCreated` receipt/log, даёт точные read-only `cast receipt`, `cast logs`, `cast call getDeal`, расшифровывает tuple и матрицу статусов. `s5:resume` явно отмечен как write path. | Матрица сверена с `scripts/deal-live.ts:494-589`: допускаются только согласованный `FINANCED` и согласованный закрытый `PAID_ON_TIME`; остальные статусы отклоняются. `scripts/deal-live.ts:328-369,974-988` подтверждает, что final JSON/log появляется только при success, catch пишет только failure log, а hard interruption может не оставить transcript. |
+| 6 | CLOSED | `README.md:359-369` включает отдельную B→B impostor funding transaction, allowance/gas, proof и обязательный итог `REJECTED_PERMANENT / WRONG_INVESTOR` в первый пошаговый обзор. | Сверено с фактической последовательностью `scripts/deal-live.ts:621-668`; позднее объяснение self-transfer сохранено. Live-транзакция при remediation не создавалась. |
+| 7 | CLOSED | `README.md:177-198` фиксирует: `.env` — единственный credential file, который S1-S5 автоматически загружает; inherited `process.env` разрешён; local build/test credentials не требует; S6 использует отдельные `file`/`manager` modes. | Сверено с `scripts/lib/config.ts:1` (`dotenv/config`), `scripts/lib/wallet.ts` (`process.env`) и S6 launcher. Утверждение «единственное место, откуда код получает credentials» удалено. |
+| 8 | CLOSED | Все показанные network commands используют `env -u NODE_TLS_REJECT_UNAUTHORIZED`; proxy example одновременно задаёт `NODE_USE_ENV_PROXY=1` (`README.md:165-174,227,345-357,383-419,446-452,507-521,572-598`). | Статический поиск network command blocks не нашёл незащищённых `capture:fixtures`, `capture:gate`, `preflight`, `probe`, `verify:live`, S5 или recovery command. Local-only commands не обёрнуты без необходимости. |
+| 9 | CLOSED | `README.md:153-222` записывает tested Node `22.22.1`, npm `9.2.0`, Forge `1.7.1`, Solc `0.8.28`, принятый Foundry/invariant масштаб, текущие 10/10 TypeScript file suites, возможную тишину Forge/typecheck и последовательный запуск suites. | Числа взяты из принятого `docs/STATUS.md`; Forge baseline не пересчитывался и не подменялся новой оценкой. Текущий лёгкий run подтвердил 10/10 TypeScript file suites. |
+
+### Remediation checks
+
+- focused production/helper persistence boundary:
+  `node --import tsx scripts/lib/env-persistence.test.ts` — 13 passed, 0 failed,
+  0 skipped;
+- `npm run test:scripts` — 10/10 file suites, 0 failed; suite уже включает
+  worker tests, поэтому отдельный параллельный `test:worker` не запускался;
+- `npm run typecheck` — чисто, без вывода ошибок;
+- `git diff --check` — чисто;
+- local Markdown links — все target-файлы существуют;
+- staged scope implementation-коммита — только `README.md`,
+  `scripts/create-wallets.ts`, `scripts/lib/env-persistence.ts` и
+  `scripts/lib/env-persistence.test.ts`;
+- тесты использовали только `mkdtemp`-каталоги, детерминированные test-only keys
+  и injected generator; checkout `.env` и пользовательские ключи не читались;
+- secret-pattern/static diff checks не нашли private key, token или seed material
+  вне очевидных test-only повторяющихся значений в regression source.
+
+Forge, solc, blockchain RPC, live scripts, реальные `wallets:create`,
+транзакции, deploy и push не запускались. `contracts/`, `worker/`,
+`deployments/`, `data/live/`, `data/probe/`, нормативные спецификации, Phase A/B
+artifacts и S6 evidence не менялись.
+
+`docs/audit/repo-cleanup-report.md` сознательно не повторялся: его новый прогон
+отложен до готового UI, дека и полного submission tree, как требует исходный
+cleanup scope.
