@@ -292,15 +292,16 @@ npm run build
 ```
 
 `wallets:create` treats persistence as a security boundary. A missing `.env` is
-created atomically as a regular mode-`0600` file. An existing regular file is
-updated through a unique exclusive sibling and atomic rename, preserving valid
-keys and unrelated content. For a symlink, the resolved regular target is
-updated by an atomic sibling on the target filesystem and the checkout symlink
-is preserved. On POSIX the command verifies target ownership and mode, probes
-the sibling directory's ownership and write permissions, probes private sibling
-creation and rename before generating a key, and refuses unsafe, dangling,
-non-regular or unresolvable targets. Private keys are never printed.
-S6 never uses this command for its worker signer.
+created atomically as a regular file. An existing regular file is updated
+through a unique exclusive sibling and atomic rename, preserving valid keys and
+unrelated content. For a symlink, the resolved regular target is updated by an
+atomic sibling on the target filesystem and the checkout symlink is preserved.
+On POSIX the command requires final mode `0600`, verifies target and sibling
+directory ownership and permissions, probes private sibling creation and rename
+before generating a key, and refuses unsafe, dangling, non-regular or
+unresolvable targets. Windows is not a target platform for live-secret storage
+and receives no POSIX owner/mode guarantee. Private keys are never printed. S6
+never uses this command for its worker signer.
 
 For an existing pair you may instead populate the protected target yourself or
 export `DEPLOYER_PRIVATE_KEY` and `BORROWER_PRIVATE_KEY` in the inherited process
@@ -381,6 +382,7 @@ and inspect its `DealCreated` receipt. The event's first indexed argument is the
 primary deal ID. Both recovery commands below are read-only:
 
 ```sh
+export CREDITCOIN_RPC_URL="${CREDITCOIN_RPC_URL:-https://rpc.cc3-testnet.creditcoin.network}"
 export DEALS_ADDRESS=0x<deals-address-from-deployments/creditcoin.json>
 env -u NODE_TLS_REJECT_UNAUTHORIZED cast receipt 0x<create-tx-hash> --rpc-url "$CREDITCOIN_RPC_URL"
 env -u NODE_TLS_REJECT_UNAUTHORIZED cast logs \
@@ -401,11 +403,14 @@ The returned fields are borrower, due block, numeric status, designated
 investor, sequence, audit-only investor, required funding, funded amount, face
 value, repaid amount and on-time repaid amount. Current recovery behavior is:
 
+Both allowed rows also require the deal's borrower and designated investor to
+match the configured wallets.
+
 | Status | Meaning | `s5:resume` |
 |---:|---|---|
 | 0 | `NONE`, unknown deal | refused |
 | 1 | `CREATED`, funding not applied | refused |
-| 2 | `FINANCED` | allowed only for the configured borrower/investor and non-zero outstanding debt; sends repayment and finishes the run |
+| 2 | `FINANCED` | allowed only with non-zero outstanding debt; sends repayment and finishes the run |
 | 3 | `DEFAULTED` | refused |
 | 4 | `PAID_LATE` | refused |
 | 5 | `PAID_ON_TIME` | allowed only with the matching on-time outcome and zero outstanding debt; creates only the reserved second deal |

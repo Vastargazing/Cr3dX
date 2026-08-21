@@ -284,3 +284,13 @@ artifacts и S6 evidence не менялись.
 `docs/audit/repo-cleanup-report.md` сознательно не повторялся: его новый прогон
 отложен до готового UI, дека и полного submission tree, как требует исходный
 cleanup scope.
+
+### Post-review precision note for finding 2
+
+Symlink killed mutant действительно покрыт regression tests. Проверено чтением
+production-кода, но не отдельными regression tests: финальная re-validation
+target перед rename, размещение temporary sibling на filesystem resolved target,
+argv entry guard с default `.env` и настоящий cast generator с подавленным
+выводом. Эти четыре свойства подтверждены чтением production path и не являются
+blocker в заявленной local-user trust model; они не выдаются за отдельное
+различающее test coverage.

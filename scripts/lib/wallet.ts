@@ -11,8 +11,8 @@ export function signerFromEnv(provider: JsonRpcProvider, variable = 'DEPLOYER_PR
   const key = process.env[variable];
   if (!key) {
     throw new Error(
-      `${variable} is not set. Run \`npm run wallets:create\` to create the two local testnet wallets. ` +
-        'Their keys stay in .env, which is git-ignored.',
+      `${variable} is not set. Provide it through the inherited process environment, or run ` +
+        '`npm run wallets:create` to store testnet keys in an allowed regular .env or its resolved external symlink target.',
     );
   }
   const normalised = key.startsWith('0x') ? key : `0x${key}`;
