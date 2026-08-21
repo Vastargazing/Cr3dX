@@ -1,5 +1,8 @@
 # Cr3dX
 
+<img width="349" height="349" alt="image" src="https://github.com/user-attachments/assets/2b62b180-af9d-4176-b797-8b93820fb709" />
+
+
 **Verified cross-chain credit layer.** Money moves on Ethereum Sepolia. Credit
 state lives on Creditcoin. The only thing that connects them is the Attestcoin
 Protocol: no relayer, no oracle, no trusted backend.
