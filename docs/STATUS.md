@@ -6,6 +6,54 @@
 
 ---
 
+## 2026-08-21 — S6 worker реализован локально, live gate не открыт
+
+Единственный нормативный вход реализации — document-only коммит
+`8759a1649b489e0d7d0a163471063d908813b589`; SHA-256
+`docs/S6_WORKER_SPEC.md` равен
+`901628b5c8dbaab23fd09e6fa0b8a0b5ed6df5b05d65ba484df87911798289fc`.
+Нормативный файл и контракты реализация не меняет.
+
+Добавлен permissionless TypeScript worker:
+
+- полный canonical-receipt admission с whole-transaction enrollment,
+  `effectiveFromSourceBlock`, лимитами очереди/событий и сохранением cursor;
+- отдельные inclusion, contract и automation state, append-only история reorg;
+- атомарные JSON-файлы `0600`, каталоги `0700`, schema version 1 и fail-closed
+  политика будущих миграций;
+- глобальная nonce lane и сохранение exact signed envelope до первого broadcast;
+- независимые semantic reconciliation и двухблочное разрешение exact receipt;
+- максимальная ответственность по комиссии резервируется вместе с envelope и
+  заменяется фактической комиссией подтверждённой квитанции;
+- отдельные submission/application epochs, повтор pending repayment после
+  изменения prerequisites и операторские `resume`/`resume-broadcast`;
+- kernel `flock` и секретные режимы `file|manager`; checkout-local `.env` и
+  `wallets:create` S6 не использует;
+- CLI для bootstrap, enrollment, queue/status/attention, single-step/run,
+  адресного advance и recovery.
+
+Архитектура записана в `docs/S6_WORKER_ARCHITECTURE.md`, эксплуатация и recovery —
+в `docs/S6_WORKER_RUNBOOK.md`, соответствие 46 обязательствам — в
+`docs/S6_WORKER_TEST_MATRIX.md`.
+
+Итоговый baseline выполнен последовательно, без параллельных компиляторов и
+тестовых процессов:
+
+- `npm run typecheck` — чисто;
+- `npm run test:scripts` — 9/9 файловых suites, в том числе все 38 worker test
+  cases и прежние script tests;
+- `forge build` — чисто, предупреждений компилятора нет;
+- non-invariant Foundry — 133/133;
+- отдельный полный invariant baseline — 8/8: семь stateful invariants по
+  256 campaigns × 500 calls, суммарно 896 000 handler calls, плюс fuzz-свойство;
+- `git diff --check` и guards неизменности нормативной спеки/контрактов — чисто.
+
+Live RPC, транзакции, deploy и push в этой реализации не выполнялись. Текущие S5
+адреса не объявлены v0.4.8 deployment. До отдельного `РАЗРЕШАЮ S6 LIVE` worker не
+запускается против live сетей.
+
+---
+
 ## 2026-08-20 — Phase B: независимая проверка v0.4.8 завершена
 
 Спецификация v0.4.8 выпущена коммитом

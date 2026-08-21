@@ -161,9 +161,11 @@ cp .env.example .env
 If you already cloned without submodules, `git submodule update --init --recursive`
 fetches the Solidity dependencies.
 
-`.env` is git-ignored and is the only place credentials are ever read from. The
-defaults in `.env.example` point at public endpoints and are enough to run the
-probe and the test suite, both of which are read-only and need no key.
+The S1-S5 scripts read the git-ignored checkout-local `.env`. The S6 worker does
+not: its launcher requires an explicit external checked file or an inherited
+secret-manager environment. `.env.example` documents both sets of variable
+names without containing a key. Public defaults are enough for the read-only
+probe and all local tests.
 
 If your parent shell exports `NODE_TLS_REJECT_UNAUTHORIZED=0`, remove it. Every
 network script refuses to run while global certificate verification is disabled.
@@ -176,6 +178,7 @@ For a shell you do not control, prefix the command with
 npm run build         # forge build
 npm test              # forge test
 npm run test:scripts  # node --test over the tooling's own logic
+npm run test:worker   # deterministic S6 worker coverage, no network or keys
 npm run typecheck     # tsc --noEmit over the TypeScript side
 ```
 
@@ -189,6 +192,40 @@ npm run capture:fixtures
 The capture reads expected values from `eth_getTransactionReceipt` and cross-checks
 them against the attested blob before writing anything, so a fixture can only be
 written if the protocol's encoding and Ethereum's own receipt agree.
+
+## S6 permissionless proof worker
+
+S6 is implemented as an untrusted liveness component under `worker/`. It watches
+complete canonical gateway receipts, waits for a fresh Attestcoin proof, submits
+through the public `submitAndApply` method and revisits individual pending facts
+through public `applyEvidence`. It adds no role or contract method and performs no
+cross-task batching.
+
+The normative implementation input is commit
+`8759a1649b489e0d7d0a163471063d908813b589`. Operator setup, explicit bootstrap,
+deal enrollment and exact-envelope recovery are documented in
+[the S6 runbook](docs/S6_WORKER_RUNBOOK.md). The persistent model and nonce
+safety argument are in [the architecture note](docs/S6_WORKER_ARCHITECTURE.md),
+and the 46-point deterministic coverage map is in
+[the test matrix](docs/S6_WORKER_TEST_MATRIX.md).
+
+The shortest local inspection path is:
+
+```sh
+export CR3DX_WORKER_STATE_DIR="$HOME/.local/state/cr3dx-worker"
+npm run worker -- status
+```
+
+Signing-capable commands must go through `worker/launch.sh` (the `npm run worker`
+scripts do). The launcher acquires a non-blocking kernel lock before reading a
+secret. File mode requires an external regular file owned by the worker user with
+mode `0600`, inside a worker-owned non-writable-by-others directory. Manager mode
+requires direct inherited injection. Neither mode loads `.env` or calls
+`wallets:create`.
+
+No live S6 operation is authorized by the presence of this implementation. The
+configured Creditcoin contracts must first be proven to be the exact v0.4.8
+deployment, and state-changing use still stops for `РАЗРЕШАЮ S6 LIVE`.
 
 ## Reproducing the live S5 scenario
 
@@ -436,6 +473,9 @@ NODE_USE_ENV_PROXY=1 npm run probe
   behaviour of the live protocol, and where it deviates from its documentation.
 - [docs/PRECOMPILE_FINDINGS.md](docs/PRECOMPILE_FINDINGS.md) - reconnaissance of
   the protocol sources, with line references.
+- [docs/S6_WORKER_SPEC.md](docs/S6_WORKER_SPEC.md) - accepted normative worker specification.
+- [docs/S6_WORKER_RUNBOOK.md](docs/S6_WORKER_RUNBOOK.md) - bootstrap, enrollment,
+  operation and exact-envelope recovery.
 - [docs/STATUS.md](docs/STATUS.md) - running log of what works and what does not.
 
 ## Status
@@ -448,5 +488,8 @@ address that is not the designated investor was refused permanently in the same
 run, and a counterfeit gateway event in an earlier one was ignored because its
 emitter was not the gateway.
 
-The proof worker and the demo interface are next. Running detail, transaction
-hashes and measured gas are in [docs/STATUS.md](docs/STATUS.md).
+The permissionless proof worker is implemented and deterministically covered
+locally. Its live acceptance remains gated on exact v0.4.8 deployment provenance
+and separate authorization; the demo interface follows after the worker's live
+cycle. Running detail, transaction hashes and measured gas are in
+[docs/STATUS.md](docs/STATUS.md).
