@@ -32,8 +32,11 @@ pass.
 Stated plainly, because a credit product that overstates its guarantees is worse
 than one that has none.
 
-**Proven cryptographically:** the funding transfer happened, the repayment
-happened, the deadline passed, and the credit outcome follows from those facts.
+**Proven cryptographically:** the source transaction was included and succeeded,
+a genuine event came from the configured Gateway, the attested source height
+passed the deadline, and the credit outcome follows from those facts. The ERC-20
+transfer follows from verified Gateway code, which emits only after successful
+`transferFrom`; it is not established directly by the Attestcoin proof.
 
 **Not proven, and not claimed:** that the invoice is real, that the claim is
 legally enforceable, or who the borrower is. *Invoice authenticity and legal
