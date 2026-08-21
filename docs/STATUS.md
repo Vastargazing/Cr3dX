@@ -6,6 +6,156 @@
 
 ---
 
+## 2026-08-21 — S6 live acceptance завершена на v0.4.8
+
+Live продолжен только после adapter-fix коммита
+`d3ff6317540d6b18d91628418c8e8372d9a079ae`. Deployment не повторялся:
+использованы существующий Sepolia Gateway
+`0x11DD8a4c790939DEa8CED631dB27Afe54334a749` и замороженный v0.4.8 комплект
+Verifier `0xED64f6157408f211dda43649129EaC1F73161093`, Deals
+`0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC`, Credit
+`0x4a66732cA5B7f081585693332C79e636CE9c05C8`. Нормативная S6 spec,
+контракты и deployment ledger не менялись.
+
+Старые proof bytes для сохранённого repayment source hash
+`0xe90b91457786d4e89104e157c746b2d8ec8d91b9462321602c96591a6c2d72ec`
+не использовались. До подписи proof был запрошен заново. Ранний preflight
+сохранил не все поля, поэтому неизвестные значения ниже не восстановлены
+задним числом:
+
+| Наблюдение одного repayment | Старый preflight | Fresh preflight после fix |
+|---|---:|---:|
+| source/query height | 11534643 | 11534643 |
+| anchor type | не записан | attestation |
+| anchor height | не записан | 11534650 |
+| anchor digest | не записан | `0xb13a633af4c01dd3d691dcb87e48755583e95f283e0e33988c01afd2c8b82529` |
+| continuity roots | не записаны | 8 |
+| encoded transaction | не записан | 2080 B |
+| proof JSON | не записан | 5791 B |
+| `submitAndApply` calldata | не записана | 3140 B |
+| simulation | SUCCESS | SUCCESS |
+| gas estimate | 282203 | 282203 |
+
+Оценка gas не изменилась. Поскольку форма старого proof не была записана,
+никакая причина изменения или неизменности через elapsed time либо
+ретроспективно предполагаемую форму proof не заявляется. Proof-builder ответил
+`cached: true`, но это был новый HTTP-запрос перед подписью, а не повторное
+использование локально сохранённых bytes. Anchor digest и его тип сверялись
+через точный `ChainInfo.get_attestation_bounds`; последний элемент массива
+continuity roots не выдаётся за anchor digest.
+
+Repayment был намеренно подан до funding после approve
+`0x156d44824068be9c74682cc37a5cd76ee36c3023340bac5cce03397bc3dfd19e`
+в Sepolia-блоке 11534642. Worker подписал его
+`submitAndApply` exact envelope с nonce 0 и отправил ровно один раз:
+`0xa626556e0798a67d77b484896d10e662763d041c2e9ead2d0c4ad112f2955657`.
+Receipt `status = 1`, блок 5347503, gasUsed 260288, 8 roots, anchor attestation
+11534650 с digest `0xb13a633a…2529`. После двух последующих canonical
+destination blocks контролируемый restart атомарно заменил maximum-liability
+reservation на actual fee `0.000130144 CTC`; evidence осталось
+`VERIFIED_PENDING`, потому что сделка ещё была `CREATED`.
+
+Funding source tx
+`0x376bde8f88c3dfa9059356d63f6866dc0209a7796ec1cdc14e9fb2a5ba203abe`
+в блоке 11534796 (после approve
+`0xc4d94417b86c1ddf1021b9143bf65a6c6282b1643b5f331de431b37c8720c6ac`
+в блоке 11534795) был принят worker после достижения attested height 11534800.
+Read-only preflight: 5 roots, anchor attestation 11534800 с digest
+`0x1b47b11718ad1ae4ad133a45d7555a79cedb5b8a4e82d0017dcd2e6d2ac0d263`,
+proof JSON 5679 B, encoded transaction 2080 B, calldata 3108 B, simulation
+SUCCESS, estimate 364799 и final limit 437759. Exact envelope nonce 1 был
+отправлен один раз как
+`0xc740cf0ee69401817c32a310f6e2781ab63d125f7fc2bd299338cfe5fdc822ad`;
+receipt `status = 1`, блок 5347560, gasUsed 340382. Отдельный restart после
+глубины +2 записал actual fee `0.000170191 CTC` и удалил envelope.
+
+После funding production `dealView` прочитал status 2 и правильного
+designated investor. Repayment `applyEvidence` имел calldata 36 B, proof/roots/
+anchor `N/A`, simulation SUCCESS, estimate 315264 и final limit 378317. Exact
+envelope nonce 2 был отправлен один раз как
+`0xa0c24a107398af5c99cc8cfaab0ea50f4542caff45c34bc8f539afbfa55b13b6`;
+receipt `status = 1`, блок 5347573, gasUsed 292348. На глубине +2 ещё один
+restart атомарно записал actual fee `0.000146174 CTC`, удалил envelope и
+перевёл repayment evidence в `APPLIED`.
+
+Итог основной сделки совпал полностью: `PAID_ON_TIME`, fundedAmount 1000000,
+repaidAmount/onTimeRepaid 1100000, outstanding 0, exposure/reserve 0, score
+`500 -> 525`, limit и available limit `5000000000 -> 5250000000`. Funding и
+repayment evidence имеют `APPLIED/NONE`. Три worker-операции израсходовали
+`0.000446509 CTC`; остаток signer — `0.019553491 CTC`, что выше reserve
+`0.005 CTC`, а фактический 24h расход значительно ниже budget `0.01 CTC`.
+
+Обязательный external-submission race выполнен вторым кошельком. После core
+close allowance на 1 base unit создан approve-транзакцией
+`0x08a09ccf48510dbf8423ea8347a91b5febd9d7e320abd988ae8e111c8ad52831`
+в блоке 11534887, затем создан surplus funding на 1 base unit, source tx
+`0x98c724cf613246c821b1a36acf765dedadc88fce36b9857ea86cf57d01a7e1ea`,
+блок 11534891, evidence ID
+`0xb7bf02c15afd864f4274428e9be186344e0191e616bc45b25ec2fab4d709d4d5`.
+Worker сначала принял task в `WAITING_ATTESTATION`, затем после attestation
+выполнил read-only production preflight: 10 roots, anchor attestation 11534900
+с digest `0x640da336bc360324380245375a1bfea8346d894d71b2d3f50db2acd94f1d29b4`,
+proof JSON 5928 B, encoded transaction 2080 B, calldata 3204 B, simulation
+SUCCESS, estimate 288151. До worker broadcast второй кошелёк отправил свежий
+proof напрямую транзакцией
+`0x8d859033ecaec13d7ebb188f8673673af0d13b989202997d613bee38f78840c2`:
+`status = 1`, блок 5347633, gasUsed 266056, те же 10 roots и тот же anchor.
+
+После внешней победы worker увидел полный `seen` set и без подписи перевёл task
+в `SUBMITTED/APPLIED`. У race-task `submissionAttemptCount = 0`,
+`applicationAttemptCount = 0`, operation history пуст, envelope отсутствует;
+worker nonce остался `3/3`, global lane открыта. Surplus funding применён и
+fundedAmount стал 1000001, но `PAID_ON_TIME`, repayment totals и credit state не
+изменились.
+
+Измеренные source-to-destination интервалы: repayment до его verifier submission
+1734 s; funding до worker submission 720 s; repayment до окончательного
+`applyEvidence` 2799 s (включает намеренное ожидание funding prerequisite);
+race source event до внешнего submission 651 s. Это наблюдения одного testnet
+прогона, не SLA. Межоперационные gasUsed также не являются контролируемым
+сравнением одной формы proof: операции меняли разные состояния. Для каждого
+mined proof-bearing вызова exact roots и anchor записаны рядом с gasUsed, без
+объяснения через прошедшее время.
+
+Полная timing-разбивка использует только сохранённые source timestamps,
+fresh-preflight timestamps и worker task JSON. Точный момент, когда proof-builder
+впервые достиг нужной attested height, не зафиксирован ни для одного из трёх
+source events: отсутствует timestamp самого перехода высоты. Поэтому следующие
+fresh-preflight строки являются первым сохранённым подтверждением, что нужная
+высота уже была доступна, а не временем самого attestation:
+
+| Timing boundary | Наблюдение |
+|---|---:|
+| repayment source -> первое сохранённое fresh-proof подтверждение достаточной высоты | 1669.539 s |
+| это подтверждение -> mined worker submission | 64.461 s |
+| repayment submission receipt -> первая worker-финализация после depth +2 | 75.646 s |
+| funding source -> первое сохранённое fresh-proof подтверждение достаточной высоты | 665.107 s |
+| это подтверждение -> mined worker submission | 54.893 s |
+| funding submission receipt -> первая worker-финализация после depth +2 | 106.120 s |
+| race source -> первое сохранённое fresh-proof подтверждение достаточной высоты | 588.271 s |
+| это подтверждение -> mined external submission | 62.729 s |
+| external submission -> worker semantic reconciliation | 48.458 s; depth +2 не требовалась, worker envelope не существовал |
+
+Для раннего repayment сохранены дополнительные границы. Source event -> первое
+`VERIFIED_PENDING` заняло 1810.057 s. Первое `VERIFIED_PENDING` -> применение
+funding evidence заняло 900.231 s; после funding worker увидел repayment
+`READY_TO_APPLY` через 73.417 s. Применение funding -> mined `applyEvidence`,
+который закрыл сделку как `PAID_ON_TIME`, заняло 88.712 s. Receipt
+`applyEvidence` -> сохранённое worker-состояние `APPLIED` после depth +2 заняло
+53.903 s. Итого source repayment -> on-chain `PAID_ON_TIME` осталось равным
+2799 s; до локально сохранённого `APPLIED` прошло 2852.903 s.
+
+Следовательно, границы attested-height transition -> submission в строгом
+смысле остались `не зафиксировано`: отсутствует левая timestamp-граница.
+Зафиксированы только приведённые интервалы от первого последующего успешного
+fresh preflight. Момент достижения depth +2 также не записан отдельным chain
+timestamp; сохранён момент первой worker-финализации после требуемой глубины.
+
+Один параллельный read-only RPC preflight получил transport timeout; он ничего
+не подписал и не записал. Последовательный повтор с новым proof request прошёл.
+Новых protocol/implementation расхождений после `d3ff631…` не обнаружено.
+Deploy и push не выполнялись.
+
 ## 2026-08-21 — S6 ABI decode blocker исправлен, live остаётся остановлен
 
 После буквального `РАЗРЕШАЮ S6 LIVE` создан отдельный testnet-only worker signer
