@@ -17,7 +17,11 @@ if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
 
 function required(name: string, fallback?: string): string {
   const v = process.env[name] ?? fallback;
-  if (!v) throw new Error(`Missing required environment variable ${name}. Copy .env.example to .env and fill it in.`);
+  if (!v) {
+    throw new Error(
+      `Missing required environment variable ${name}. Set it in the inherited process environment or in the automatically loaded project .env; see .env.example for the variable list.`,
+    );
+  }
   return v;
 }
 
