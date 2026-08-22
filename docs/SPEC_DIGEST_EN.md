@@ -8,7 +8,9 @@
 
 This digest restates the state model, evidence classification and accounting
 rules of specification sections 3 and 4 for readers who do not read Russian.
-It adds nothing. The invariants INV-1 to INV-22 already exist in English, each
+It introduces no normative rule; current-deployment values and
+implementation-only names are labelled explicitly. The invariants INV-1 to
+INV-22 already exist in English, each
 stated as a property with its oracle, in the sealed Phase A
 [invariant coverage matrix](verification/v0.4.8-phase-b/phase-a/invariant-coverage-matrix.md);
 its opening block defines the economic-state projection `Econ(S)` used below.
@@ -18,10 +20,15 @@ English in [`S6_WORKER_SPEC.md`](S6_WORKER_SPEC.md).
 ## 1. Identifiers and units
 
 ```text
-termsHash  = keccak256(abi.encode(borrower, designatedInvestor, requiredFunding, faceValue, dueBlock))
-dealId     = keccak256(abi.encode(creditcoinChainId, dealsContractAddress, dealSeq, termsHash))
-evidenceId = keccak256(abi.encode(chainKey, blockHeight, txIndex, eventKind, eventNonce))
+termsHash  = keccak256(borrower, designatedInvestor, requiredFunding, faceValue, dueBlock)
+dealId     = keccak256(creditcoinChainId, dealsContractAddress, dealSeq, termsHash)
+evidenceId = keccak256(abi.encode(chainKey, blockHeight, txIndex, uint8(kind), eventNonce))
 ```
+
+The specification defines the field sequence of `termsHash` and `dealId`; the
+current implementation encodes those fields with `abi.encode`, widening every
+field to a full word. For `evidenceId` the specification itself fixes the exact
+`abi.encode` form, so a redeployed verifier reproduces the same identifiers.
 
 - `txIndex` is taken only after the same proof has passed `verify`.
 - `eventNonce` is the gateway's own counter, read from the verified log and shared
@@ -57,9 +64,11 @@ any `PAID_* -> FINANCED`, any `PAID_* -> DEFAULTED`.
   threshold also reverts; the specification names no error for it, the
   implementation calls it `DefaultTooEarly`.
 - There is no cancel, no reserve release and no administrative function. A
-  created deal can accept funding forever. Funding an overdue deal is applied, and
-  the deal then immediately qualifies for default. Creating a deal whose
-  `dueBlock` has already passed is allowed.
+  created deal can accept funding forever. Otherwise-valid funding of an overdue
+  deal is still applied. The financed deal is immediately defaultable only if the
+  attested source height already exceeds `dueBlock + attestationGracePeriod`;
+  otherwise it becomes defaultable when that threshold is crossed. Creating a
+  deal whose `dueBlock` has already passed is allowed.
 - Deadlines are judged against the attested source height read from the
   `ChainInfo` precompile, never against Creditcoin's own block number or time.
 
@@ -134,8 +143,12 @@ accepted and paid for in gas by the submitter.
 The registry's `submitAndApply` and `submitAndApplyBatch` (up to ten heights
 under one continuity proof) prove, record and apply in one transaction;
 `applyEvidence(evidenceId)` drives a previously recorded fact. Direct submission
-to the verifier stays open to anyone. That is the complete state-changing
-surface together with `createDeal` and `markDefaulted`.
+to the verifier stays open to anyone. The complete permissionless user surface
+on Creditcoin is `Verifier.submitEvidence*` plus `Deals.createDeal`,
+`submitAndApply*`, `applyEvidence` and `markDefaulted`. `Credit` exposes its
+state-changing methods only to the `Deals` contract bound at construction; they
+are not user-callable. On Sepolia the surface is `Gateway.fund` and
+`Gateway.repay`.
 
 **Verifier refusals.** A proof of a transaction with receipt `status != 1` is
 refused: the precompile does not check the status, the verifier must (the
@@ -190,7 +203,7 @@ forever, or left pending. None of those branches reverts.
 
 ```text
 createDeal                       reserved += faceValue
-any funding                      fundedAmount += amount; reserve and exposure unchanged
+any applied funding              fundedAmount += amount; reserve and exposure unchanged
 threshold crossing               reserved -= faceValue; exposure += faceValue   (once)
 applied repayment                exposure -= (outstanding before - outstanding after)
 
