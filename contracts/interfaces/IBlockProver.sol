@@ -41,9 +41,13 @@ interface IBlockProver {
     }
 
     /// @notice Emitted by the state-changing variants on every proven transaction.
-    /// @dev Measured on the live testnet: emitting this event costs nothing,
-    ///      because the precompile stores the log without charging for it. Do not
-    ///      budget gas against that; see docs/ATTESTCOIN_INTEGRATION.md, finding F-1.
+    /// @dev Measured on the live testnet on 2026-08-19: emitting this event cost
+    ///      nothing, because the inspected precompile path stored the log without
+    ///      charging for it. That is a measurement, not a pricing rule. The
+    ///      Creditcoin Team's preliminary position (2026-08-20) is that the LOG3
+    ///      should be charged, roughly 1,756 gas per event, so a budget for
+    ///      `verifyAndEmit` must tolerate that increase. Cr3dX itself calls
+    ///      `verify`. See docs/ATTESTCOIN_INTEGRATION.md, finding F-1.
     event TransactionVerified(uint64 indexed chainKey, uint64 indexed height, uint64 transactionIndex);
 
     /// @notice Verifies one transaction. Returns `true` or reverts.

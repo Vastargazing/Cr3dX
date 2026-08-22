@@ -115,3 +115,86 @@ describe('production sources', () => {
     }
   });
 });
+
+/**
+ * The deployment ledger is the only place an address may originate. Two public
+ * documents restate the current addresses for readers who will not open JSON:
+ * the README table and the S5 runbook's anchor table. Both have drifted from
+ * the ledger before, because the registry was redeployed three times. This pins
+ * the restated copies to the ledger and refuses any superseded address in them.
+ *
+ * The dashboard under `ui/` is deliberately not pinned: it shows a frozen,
+ * commit-identified snapshot and must keep its provenance after a redeploy.
+ */
+interface CreditcoinLedger {
+  verifier: string;
+  deals: string;
+  credit: string;
+  previousVerifiers: { verifier: string }[];
+  previousDeals: { deals: string; credit: string }[];
+}
+
+interface SepoliaLedger {
+  token: string;
+  gateway: string;
+  doubleFundingFixture: string;
+}
+
+describe('deployment anchors', () => {
+  const creditcoin = JSON.parse(readFileSync('deployments/creditcoin.json', 'utf8')) as CreditcoinLedger;
+  const sepolia = JSON.parse(readFileSync('deployments/sepolia.json', 'utf8')) as SepoliaLedger;
+  const readme = readFileSync('README.md', 'utf8');
+  const runbook = readFileSync('docs/S5_LIVE_RUNBOOK.md', 'utf8');
+
+  const current: Record<string, string> = {
+    'Sepolia USDC': sepolia.token,
+    Cr3dXGateway: sepolia.gateway,
+    Cr3dXVerifier: creditcoin.verifier,
+    Cr3dXDeals: creditcoin.deals,
+    Cr3dXCredit: creditcoin.credit,
+    DoubleFundingFixture: sepolia.doubleFundingFixture,
+  };
+  const lower = (value: string): string => value.toLowerCase();
+  const currentValues = Object.values(current).map(lower);
+  const history = [
+    ...creditcoin.previousVerifiers.map((entry) => entry.verifier),
+    ...creditcoin.previousDeals.flatMap((entry) => [entry.deals, entry.credit]),
+  ];
+  // The first verifier landed on the gateway's address: the deployer used nonce
+  // 0 on both chains. That address is superseded on Creditcoin and current on
+  // Sepolia at the same time, so it cannot count as drift when a document
+  // shows it. Everything else in the history must be absent.
+  const superseded = history.filter((old) => !currentValues.includes(lower(old)));
+
+  it('ledger names distinct current addresses and a non-empty history', () => {
+    assert.equal(new Set(currentValues).size, currentValues.length, 'current addresses collide');
+    assert.ok(superseded.length > 0, 'the ledger records no superseded deployment');
+    const overlap = history.filter((old) => currentValues.includes(lower(old))).map(lower);
+    assert.deepEqual(overlap, [lower(sepolia.gateway)], 'an unexpected address is both current and superseded');
+  });
+
+  it('README deployed-contracts table carries every current address and no superseded one', () => {
+    for (const [name, address] of Object.entries(current)) {
+      assert.ok(readme.includes(`\`${address}\``), `README does not show ${name} ${address}`);
+    }
+    for (const old of superseded) {
+      assert.equal(readme.toLowerCase().includes(old.toLowerCase()), false, `README still mentions superseded ${old}`);
+    }
+  });
+
+  it('S5 runbook anchor table matches the ledger', () => {
+    const row = (label: string): string => {
+      const match = new RegExp(`^\\| ${label} \\| \`(0x[0-9a-fA-F]{40})\` \\|$`, 'm').exec(runbook);
+      assert.ok(match?.[1], `runbook anchor table has no row for ${label}`);
+      return match[1];
+    };
+    assert.equal(row('Sepolia USDC'), sepolia.token);
+    assert.equal(row('`Cr3dXGateway`'), sepolia.gateway);
+    assert.equal(row('`Cr3dXVerifier`'), creditcoin.verifier);
+    assert.equal(row('current `Cr3dXDeals`'), creditcoin.deals);
+    assert.equal(row('current `Cr3dXCredit`'), creditcoin.credit);
+    for (const old of superseded) {
+      assert.equal(runbook.toLowerCase().includes(old.toLowerCase()), false, `runbook still mentions superseded ${old}`);
+    }
+  });
+});
