@@ -163,6 +163,9 @@ Read in this order:
 1. [`docs/WORKFLOW.md`](docs/WORKFLOW.md) for sources of truth and change order.
 2. [`docs/cr3dx-spec-v0.4.0-final.md`](docs/cr3dx-spec-v0.4.0-final.md) for
    normative behavior. The filename is historical; the revision inside is v0.4.8.
+   The specification is written in Russian;
+   [`docs/SPEC_DIGEST_EN.md`](docs/SPEC_DIGEST_EN.md) is a non-normative English
+   guide to its state model, evidence classification and accounting rules.
 3. The top of [`docs/STATUS.md`](docs/STATUS.md) for current implementation,
    deployment and acceptance state.
 4. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
@@ -198,7 +201,8 @@ are evidence and historical review material, not the current task list.
   safety and exact-envelope recovery.
 - [Attestcoin integration](docs/ATTESTCOIN_INTEGRATION.md): measured protocol
   behavior, proof boundaries and upstream differences.
-- [Specification](docs/cr3dx-spec-v0.4.0-final.md),
+- [Specification](docs/cr3dx-spec-v0.4.0-final.md) and its
+  [English digest](docs/SPEC_DIGEST_EN.md),
   [current status](docs/STATUS.md), [verification evidence](docs/verification/)
   and [historical audits](docs/audit/).
 
