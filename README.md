@@ -152,9 +152,10 @@ npm run typecheck
 
 The current verified baseline is 141/141 Foundry tests, including 8 invariant/property
 suites, plus 10/10 TypeScript file suites. The invariant run can spend several
-minutes without output. During edits, use
-`forge test --no-match-path 'test/Cr3dXInvariants.t.sol'` for a faster loop; run
-the full three-command baseline before handoff.
+minutes without output. During edits, use `npm run check:quick`, which runs the
+Foundry suites without the stateful invariant file, the TypeScript suites and
+the type check in about a minute; run the full three-command baseline before
+handoff.
 
 ## New contributor path
 

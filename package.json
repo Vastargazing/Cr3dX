@@ -15,6 +15,8 @@
     "capture:fixtures": "node --import tsx scripts/capture-fixtures.ts",
     "build": "forge build",
     "test": "forge test",
+    "test:quick": "forge test --no-match-path test/Cr3dXInvariants.t.sol",
+    "check:quick": "npm run test:quick && npm run test:scripts && npm run typecheck",
     "deploy:sepolia": "node --import tsx scripts/deploy-gateway.ts",
     "deploy:gateway": "npm run deploy:sepolia",
     "capture:gate": "node --import tsx scripts/capture-gate-fixtures.ts",
