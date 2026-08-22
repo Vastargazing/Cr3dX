@@ -24,6 +24,10 @@ SHA-256 входного пакета
 Аннотация прямо исключена из запечатанного входа и не меняет поведение;
 исторический журнал v0.4.8 не переписывался.
 
+Все пять адресов в таблице deployed contracts теперь ведут на соответствующий
+EVM explorer: Sepolia Etherscan для Gateway и test fixture, Creditcoin Testnet
+Blockscout для Verifier, Deals и Credit.
+
 Локальная проверка: Node.js `v22.22.1`, npm `9.2.0`, Forge `1.7.1`;
 `typecheck` чистый; TypeScript 10/10 suites; Foundry 141/141, включая 8/8
 invariant/property suites и 896 000 handler calls; отдельный быстрый Foundry

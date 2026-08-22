@@ -85,10 +85,10 @@ anchor is the address.
 | Contract | Network | Address |
 |---|---|---|
 | `Cr3dXGateway` | Ethereum Sepolia | [`0x11DD8a4c790939DEa8CED631dB27Afe54334a749`](https://sepolia.etherscan.io/address/0x11DD8a4c790939DEa8CED631dB27Afe54334a749) |
-| `Cr3dXVerifier` | Creditcoin3 Testnet | `0xED64f6157408f211dda43649129EaC1F73161093` |
-| `Cr3dXDeals` | Creditcoin3 Testnet | `0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC` |
-| `Cr3dXCredit` | Creditcoin3 Testnet | `0x4a66732cA5B7f081585693332C79e636CE9c05C8` |
-| `DoubleFundingFixture` | Ethereum Sepolia | `0x014B96AB1E09b4F041451787F62A244fA9c180E6` |
+| `Cr3dXVerifier` | Creditcoin3 Testnet | [`0xED64f6157408f211dda43649129EaC1F73161093`](https://creditcoin-testnet.blockscout.com/address/0xED64f6157408f211dda43649129EaC1F73161093) |
+| `Cr3dXDeals` | Creditcoin3 Testnet | [`0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC`](https://creditcoin-testnet.blockscout.com/address/0x8f7B944653063f43Bb213CE49517f9Bf9fC6A3cC) |
+| `Cr3dXCredit` | Creditcoin3 Testnet | [`0x4a66732cA5B7f081585693332C79e636CE9c05C8`](https://creditcoin-testnet.blockscout.com/address/0x4a66732cA5B7f081585693332C79e636CE9c05C8) |
+| `DoubleFundingFixture` | Ethereum Sepolia | [`0x014B96AB1E09b4F041451787F62A244fA9c180E6`](https://sepolia.etherscan.io/address/0x014B96AB1E09b4F041451787F62A244fA9c180E6) |
 
 An earlier verifier at `0x11DD8a4c790939DEa8CED631dB27Afe54334a749` was superseded
 and is kept in `deployments/creditcoin.json` with the reason. It landed on the
