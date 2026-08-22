@@ -144,11 +144,37 @@ deployments/     live addresses, committed
 docs/            specification, protocol reconnaissance, integration notes, status
 data/probe/      raw measurement output, committed as evidence
 data/live/       live end-to-end runs with their measured gas, committed
+assets/          public project artwork and other presentation assets
 ```
 
 Contracts and their tests are built with Foundry, because the specification calls
 for invariant fuzzing. Scripts, deployment and the worker are TypeScript on ethers
 v6, which is also what the protocol SDK is written in.
+
+## New contributor path
+
+For a first pass, do not read every document in `docs/` chronologically. Use this
+order instead:
+
+1. Read this README through the trust boundary and repository layout.
+2. Read [`docs/WORKFLOW.md`](docs/WORKFLOW.md). It defines the project's sources
+   of truth and the required order for behavioral changes.
+3. Read the active specification,
+   [`docs/cr3dx-spec-v0.4.0-final.md`](docs/cr3dx-spec-v0.4.0-final.md). The
+   filename is historical; the revision stated inside the file is authoritative.
+4. Read the current status at the top of [`docs/STATUS.md`](docs/STATUS.md), then
+   consult older entries only when you need their deployment or verification
+   evidence.
+5. Follow the production path in code:
+   `Cr3dXGateway` -> `Cr3dXVerifier` -> `Cr3dXDeals` -> `Cr3dXCredit`. The
+   corresponding tests are the quickest executable examples of each boundary.
+6. Read the S6 architecture and runbook only if your task touches the proof
+   worker. Read `docs/verification/` and `docs/audit/` as evidence and historical
+   review material, not as the current task list.
+
+This separates three questions that otherwise become easy to mix together: the
+README explains the product, the specification defines behavior, and `STATUS`
+records what was actually implemented, deployed and observed.
 
 ## Setup
 
@@ -203,6 +229,13 @@ For a shell you do not control, prefix the command with
 
 ## Building and testing
 
+If Foundry was installed in the standard location but a new shell cannot find
+`forge`, restore the path first:
+
+```sh
+export PATH="$HOME/.foundry/bin:$PATH"
+```
+
 ```sh
 npm run build         # forge build
 npm test              # forge test
@@ -210,6 +243,18 @@ npm run test:scripts  # node --test over the tooling's own logic
 npm run test:worker   # deterministic S6 worker coverage, no network or keys
 npm run typecheck     # tsc --noEmit over the TypeScript side
 ```
+
+For a short edit-feedback loop, exclude the long stateful invariant suite and run
+the relevant contract tests plus the TypeScript checks:
+
+```sh
+forge test --no-match-path 'test/Cr3dXInvariants.t.sol'
+npm run test:scripts
+npm run typecheck
+```
+
+Before handing off a change, run the full `npm test`; the quick command is not the
+acceptance baseline.
 
 The accepted baseline has 133/133 non-invariant Foundry tests and 8/8 invariant
 or property suites. Seven stateful invariants ran 256 campaigns x 500 calls,
