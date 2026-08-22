@@ -140,6 +140,7 @@ test/            Foundry tests
 scripts/         TypeScript tooling: network probe, fixture capture, deployment
   lib/           shared clients for the precompiles and the proof builder
 worker/          proof worker: watches the gate, waits for attestation, submits
+ui/              read-only dashboard: accepted snapshot plus public RPC observation
 deployments/     live addresses, committed
 docs/            specification, protocol reconnaissance, integration notes, status
 data/probe/      raw measurement output, committed as evidence
@@ -175,6 +176,30 @@ order instead:
 This separates three questions that otherwise become easy to mix together: the
 README explains the product, the specification defines behavior, and `STATUS`
 records what was actually implemented, deployed and observed.
+
+## Read-only demonstration dashboard
+
+The single-page dashboard under `ui/` presents the accepted S6 outcome, economic
+state, observed timeline, worker behavior and verification boundary. Start it
+without an `.env` or any credentials:
+
+```sh
+npm run ui:dev
+```
+
+The accepted snapshot is frozen at `2026-08-21` and evidence commit
+`f359c54c5647841a08e4e66dec267cf4cbeb110d`. It remains visible and immutable.
+The separate **Live RPC observation** can repeat public view calls against
+Creditcoin testnet, reports its destination block and local read time, and says
+whether that observation matches the accepted snapshot. If a later read fails,
+the last successful observation remains explicitly stale with its original block
+and timestamp; it is never relabelled as snapshot data.
+
+The browser surface has no wallet connection, signer, private configuration,
+transaction submission, backend, local worker-state access, analytics, CDN or
+remote font. Its contract ABI contains view functions only. Build and verify it
+with `npm run ui:typecheck`, `npm run test:ui` and `npm run ui:build`; the Vite
+output uses relative assets so it can be served from a static subpath.
 
 ## Setup
 
@@ -675,6 +700,7 @@ complete, fresh v0.4.8 deployment provenance is established, and live acceptance
 completed successfully on testnets with a separate funded worker signer. The
 accepted cycle exercised repayment-before-funding through `VERIFIED_PENDING`,
 automatic targeted `applyEvidence` after funding, and external-submission
-reconciliation without a worker signature or broadcast. The demo interface is
-the next stage. Exact transaction hashes, timing and measured gas are in
-[docs/STATUS.md](docs/STATUS.md).
+reconciliation without a worker signature or broadcast. A read-only demonstration
+dashboard now explains that accepted run and can independently repeat the public
+Creditcoin state reads without a wallet or signer. Exact transaction hashes,
+timing and measured gas are in [docs/STATUS.md](docs/STATUS.md).
