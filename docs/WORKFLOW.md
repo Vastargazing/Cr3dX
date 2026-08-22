@@ -151,6 +151,10 @@ npm run test:scripts
 npm run typecheck
 ```
 
+Если Foundry установлен стандартным `foundryup`, но новый shell не находит
+`forge`, сначала выполнить `export PATH="$HOME/.foundry/bin:$PATH"`. Это изменение
+окружения shell, а не дополнительный шаг установки.
+
 Требуется Node.js 20 или новее и стабильный Foundry. Установка описана в README.
 `node_modules`, Foundry build output и секреты остаются локальными; спецификация,
 workflow, status и deployment-артефакты коммитятся.

@@ -6,6 +6,64 @@
 
 ---
 
+## 2026-08-22 — проверка onboarding глазами нового разработчика
+
+Выполнен локальный проход по публичной документации, production-контрактам и
+командам проверки без ключей, RPC и state-changing действий. Подробные наблюдения
+сохранены в `docs/audit/onboarding-review-2026-08-22.md`.
+
+README получил короткий порядок знакомства с проектом, явное пояснение
+исторического имени файла спецификации, подсказку для Foundry PATH и быструю
+итерационную тестовую команду. В шапку спецификации добавлена датированная
+post-release non-normative аннотация: реализация v0.4.8 уже выровнена коммитом
+`1a308816ab3b73056718f6f174c47c10f9fb8cd3`, Phase B завершена 63/63, точный
+комплект задеплоен и принят. Отдельно зафиксировано замороженное нормативное
+основание Phase B: spec-коммит `cbc382b39fabd9a34b218fe6ff35699e18bdca4a` и
+SHA-256 входного пакета
+`c8119bb3b8aba49348bc467ccb085bf4ad4afc98781463e3c644d091b12c7b80`.
+Аннотация прямо исключена из запечатанного входа и не меняет поведение;
+исторический журнал v0.4.8 не переписывался.
+
+Все пять адресов в таблице deployed contracts теперь ведут на соответствующий
+EVM explorer: Sepolia Etherscan для Gateway и test fixture, Creditcoin Testnet
+Blockscout для Verifier, Deals и Credit.
+
+Локальная проверка: Node.js `v22.22.1`, npm `9.2.0`, Forge `1.7.1`;
+`typecheck` чистый; TypeScript 10/10 suites; Foundry 141/141, включая 8/8
+invariant/property suites и 896 000 handler calls; отдельный быстрый Foundry
+прогон без stateful invariant-файла также успешен. Forge дважды предупредил, что
+read-only домашний каталог не позволяет обновить глобальный signature cache;
+на сборку и результаты тестов это не повлияло.
+
+Каталог `personal/` переименован в `assets/`: отслеживаемый проектный логотип
+перенесён без изменения содержимого, а назначение каталога добавлено в repository
+layout README.
+
+В follow-up editorial pass ветка безопасно синхронизирована с
+`origin/main@7933abea6c3b5cb721052a4f36d9882eaf578ba3`, куда уже вошёл dashboard из
+PR #5. Незавершённый README/S5/deck diff до merge был сохранён path-scoped stash;
+после разрешения конфликтов README и STATUS восстановлен поверх UI merge. UI,
+package scripts и его evidence приняты без изменения. Историческая запись
+dashboard ниже сохраняет состояние на момент своего коммита; текущий факт merge
+зафиксирован здесь.
+
+README сокращён с 680 до 207 строк и теперь служит входом в проект: назначение,
+одна схема, live result, компактная trust boundary, адреса, dashboard, локальный
+quickstart, contributor path и ссылки. Credentials, state-changing S5 modes,
+recovery и legacy fixture перенесены без live-запуска в
+`docs/S5_LIVE_RUNBOOK.md`; измерения и история остаются в своих evidence/status
+документах. Существующий `assets/Cr3dX_RWA_Deck_v1.pptx` не открывался и не
+изменялся; он включён как 56 KB presentation artifact, чтобы ссылка README не
+была битой.
+
+Финальный polish не расширяет README: логотип получил стабильный путь
+`assets/logo/cr3dx-logo.png` и теперь загружается из репозитория, его blob не
+изменился. Mermaid различает funding в сторону borrower и repayment в сторону
+investor; тяжёлая фраза про reserve упрощена, а процессное `accepted` заменено на
+product-facing формулировки.
+
+---
+
 ## 2026-08-21 — read-only dashboard принят и закоммичен
 
 На ветке `ui/read-only-dashboard` добавлена одна desktop-first vanilla
