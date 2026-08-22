@@ -1,145 +1,160 @@
-# Cr3dX — рабочий процесс и изоляция ролей
+# Cr3dX contributor workflow and role isolation
 
-Этот файл — переносимый владелец процесса. Он коммитится вместе с репозиторием и
-обязателен для нового рабочего места и нового чата. Локальный файл инструкций,
-если он есть, memory,
-история чата и устные договорённости могут помогать, но не заменяют этот документ.
+This file is the portable owner of the process. It is committed with the
+repository and is mandatory for every new workstation and chat. A local
+instruction file, if present, memory, chat history and verbal agreements may
+help, but they do not replace this document.
 
-## Источники истины
+## Sources of truth
 
-Перед началом новой сессии читать в таком порядке:
+At the start of a new session, read in this order:
 
-1. `docs/WORKFLOW.md` — роли, границы доступа и порядок этапов;
-2. `docs/cr3dx-spec-v0.4.0-final.md` — действующая целевая семантика;
-3. `docs/STATUS.md` — выполненная работа, текущие адреса, свидетельства и открытые
-   хвосты;
-4. код и тесты — только если роль текущего чата имеет к ним доступ.
+1. `docs/WORKFLOW.md` for roles, access boundaries and phase order;
+2. `docs/cr3dx-spec-v0.4.0-final.md` for the current target semantics;
+3. `docs/STATUS.md` for completed work, current addresses, evidence and open
+   items;
+4. code and tests, only if the current chat role may access them.
 
-README объясняет проект, но не задаёт целевое поведение. При расхождении поведения
-спецификация имеет приоритет до тех пор, пока противоречие не записано новой
-документной редакцией.
+The README explains the project but does not define target behavior. If behavior
+conflicts, the specification takes priority until the conflict is recorded in a
+new document revision.
 
-## Роли и чаты
+## Roles and chats
 
-### Координатор
+### Coordinator
 
-Координатор — человек, который владеет маршрутизацией между чатами. Только он:
+The coordinator is the person who owns routing between chats. Only the
+coordinator:
 
-- выдаёт агентам промпты и точные хеши входных коммитов;
-- решает, когда спецификация готова к передаче;
-- переносит результаты между изолированными чатами;
-- открывает фазу B после завершения обеих независимых веток;
-- разрешает передеплой и внешние действия.
+- gives agents prompts and exact input commit hashes;
+- decides when the specification is ready for handoff;
+- transfers results between isolated chats;
+- opens Phase B after both independent branches are complete;
+- authorizes redeployment and external actions.
 
-Агенты не пересылают друг другу контекст самостоятельно и не расширяют свой доступ
-по догадке.
+Agents do not transfer context to one another on their own and do not expand
+their access by assumption.
 
-### Чат спецификации
+### Specification chat
 
-Его задача — определить целевую семантику до изменения реализации. Допустимые входы:
-текущая спецификация, модель угроз, обнаруженный контрпример и решения координатора.
+Its task is to define target semantics before the implementation changes. Its
+allowed inputs are the current specification, the threat model, a discovered
+counterexample and coordinator decisions.
 
-Результат поведенческой правки — отдельный document-only коммит со статусом
-`implementation pending`. В нём нет изменений кода, тестов, deployment-артефактов
-или результатов новой живой приёмки.
+A behavioral change produces a separate document-only commit marked
+`implementation pending`. It contains no code, test, deployment artifact or new
+live acceptance result.
 
-### Слепой чат модели
+### Blind model chat
 
-Его задача — независимо построить модель и оракул по целевой спецификации.
+Its task is to build an independent model and oracle from the target
+specification.
 
-Слепому агенту нельзя показывать:
+The blind agent must not see:
 
-- реализацию контрактов и её diff;
-- тесты реализации и названия добавленных регрессий, если они раскрывают выбранный
-  механизм;
-- implementation-коммиты, deployment-артефакты и результаты запуска нового кода;
-- выводы implementation-чата о том, как удобнее реализовать правило.
+- contract implementation or its diff;
+- implementation tests or names of added regressions when they expose the
+  chosen mechanism;
+- implementation commits, deployment artifacts or results from running the new
+  code;
+- conclusions from the implementation chat about convenient ways to implement
+  the rule.
 
-Допустимый вход — материализованный документный пакет целевой спецификации,
-идентифицированный полным хешем document-only коммита, и отдельный промпт
-координатора. `Document-only` описывает diff коммита, а не всё его дерево: родители
-обычного коммита могут уже содержать реализацию. Поэтому слепому чату не открывается
-полный checkout implementation-репозитория; ему передаются только явно перечисленные
-документные файлы. Если diff входного коммита меняет код или тесты либо окружение
-раскрывает их слепому чату, агент останавливается и сообщает о нарушении изоляции, не
-ограничиваясь обещанием «не смотреть».
+The allowed input is a materialized document package of the target
+specification, identified by the full hash of its document-only commit, plus a
+separate coordinator prompt. `Document-only` describes the commit diff, not its
+entire tree. The parents of an ordinary commit may already contain the
+implementation. The blind chat therefore does not receive a full checkout of
+the implementation repository. It receives only explicitly listed document
+files. If the input commit diff changes code or tests, or the environment
+exposes them to the blind chat, the agent stops and reports the isolation breach.
+Merely promising not to inspect them is insufficient.
 
-### Чат реализации
+### Implementation chat
 
-Его задача — привести код и тесты к зафиксированной целевой спецификации. Он получает
-тот же document-only хеш, что и слепой агент, но не получает модель, оракул или
-выводы слепого чата до фазы B.
+Its task is to align code and tests with the fixed target specification. It
+receives the same document-only hash as the blind agent but does not receive the
+model, oracle or conclusions of the blind chat before Phase B.
 
-Реализация не меняет спецификацию постфактум, чтобы описать удобное поведение кода.
-Если обнаружено противоречие или непокрытый случай, работа останавливается и
-возвращается в чат спецификации.
+The implementation does not change the specification after the fact to describe
+convenient code behavior. If it finds a contradiction or an uncovered case, work
+stops and returns to the specification chat.
 
-### Фаза B
+### Phase B
 
-Фаза B начинается только после того, как слепая модель и реализация независимо
-завершены на одном spec-хеше. Здесь впервые разрешено сравнить обе стороны.
+Phase B begins only after the blind model and implementation are independently
+complete against the same specification hash. This is the first point at which
+the two sides may be compared.
 
-Каждое расхождение классифицируется до исправления:
+Classify every mismatch before fixing it:
 
-- ошибка реализации;
-- ошибка модели;
-- неоднозначность или противоречие спецификации;
-- ошибка окружения либо свидетельства.
+- implementation error;
+- model error;
+- specification ambiguity or contradiction;
+- environment or evidence error.
 
-Нельзя автоматически считать зелёный тест доказательством правильности одной из
-сторон. Сначала фиксируется точное правило, вход и наблюдаемое расхождение.
+A green test must not automatically be treated as proof that one side is
+correct. First record the exact rule, input and observed mismatch.
 
-## Обязательный порядок поведенческой правки
+## Mandatory order for a behavioral change
 
+```text
+target specification, document-only commit
+                 /                    \
+        blind model                implementation
+                 \                    /
+                          Phase B
+                             |
+                  redeployment and live acceptance
 ```
-целевая спецификация, document-only commit
-              /                    \
-     слепая модель              реализация
-              \                    /
-                       фаза B
-                         |
-                 передеплой и live acceptance
-```
 
-1. Записать контрпример и целевое решение в спецификации.
-2. Выпустить отдельный document-only коммит с `implementation pending`.
-3. Координатор передаёт один и тот же spec-хеш в слепой и implementation-чаты.
-4. Обе ветки работают независимо.
-5. В фазе B сравнить результаты и закрыть расхождения по классификации выше.
-6. Только после этого передеплоить изменившиеся контракты и выполнить живую
-   приёмку.
-7. Записать адреса, транзакции, наблюдения и тестовые числа в `docs/STATUS.md`.
-8. Снять `implementation pending` отдельным документным обновлением, если это нужно.
+1. Record the counterexample and target decision in the specification.
+2. Publish a separate document-only commit marked `implementation pending`.
+3. The coordinator gives the same specification hash to the blind and
+   implementation chats.
+4. Both branches work independently.
+5. In Phase B, compare the results and close mismatches using the classification
+   above.
+6. Only then redeploy changed contracts and perform live acceptance.
+7. Record addresses, transactions, observations and test counts in
+   `docs/STATUS.md`.
+8. Remove `implementation pending` in a separate document update if needed.
 
-Редакционная правка, не меняющая поведение, может выйти после реализации, но должна
-быть прямо названа редакционной. Она не получает статус `implementation pending`.
+An editorial change that does not affect behavior may follow the implementation,
+but it must be explicitly identified as editorial. It does not receive
+`implementation pending` status.
 
-## Проверка промпта до работы
+## Validate the prompt before work
 
-Промпт — вход от координатора, а не безусловная истина. До изменений агент сверяет:
+A prompt is coordinator input, not unconditional truth. Before making changes,
+the agent checks that:
 
-- указанный хеш существует и соответствует описанной роли;
-- версия и статус спецификации совпадают с задачей;
-- рабочее дерево не содержит чужих незавершённых изменений в затрагиваемых файлах;
-- запрошенный порядок не противоречит этому документу;
-- адреса и результаты приёмки относятся к нужному deployment-артефакту.
+- the stated hash exists and matches the described role;
+- the specification version and status match the task;
+- the working tree has no unrelated unfinished changes in affected files;
+- the requested order does not conflict with this document;
+- addresses and acceptance results belong to the correct deployment artifact.
 
-При содержательном расхождении агент останавливается, приводит точные свидетельства
-и обсуждает его с координатором. Механически выполнять противоречивый промпт нельзя.
+On a substantive mismatch, the agent stops, presents exact evidence and discusses
+it with the coordinator. A conflicting prompt must not be followed mechanically.
 
-## Коммиты и передача хешей
+## Commits and hash handoff
 
-- Spec-коммит содержит только документацию целевого поведения.
-- Implementation-коммит содержит код и тесты; его хеш не передаётся слепому агенту.
-- Workflow, handoff и редакционные исправления не смешиваются с поведенческим кодом.
-- `git status`, состав staged-файлов и diff проверяются перед каждым коммитом.
-- Слепому агенту передаётся полный 40-символьный spec-хеш и материализованные
-  документные файлы из него, но не checkout всего implementation-репозитория.
-- В `main` ничего не переписывается задним числом для изображения независимости.
+- A specification commit contains only target-behavior documentation.
+- An implementation commit contains code and tests. Its hash is not given to the
+  blind agent.
+- Workflow, handoff and editorial corrections are not mixed with behavioral
+  code.
+- Check `git status`, staged files and the diff before every commit.
+- Give the blind agent the full 40-character specification hash and materialized
+  document files from it, not a checkout of the entire implementation
+  repository.
+- Nothing in `main` is rewritten after the fact to create the appearance of
+  independence.
 
-## Переносимость рабочего места
+## Workstation portability
 
-Минимальная локальная проверка перед работой:
+Minimum local check before work:
 
 ```sh
 git submodule status
@@ -152,31 +167,32 @@ npm run test:scripts
 npm run typecheck
 ```
 
-Если Foundry установлен стандартным `foundryup`, но новый shell не находит
-`forge`, сначала выполнить `export PATH="$HOME/.foundry/bin:$PATH"`. Это изменение
-окружения shell, а не дополнительный шаг установки.
+If Foundry was installed through the standard `foundryup` path but a new shell
+cannot find `forge`, first run `export PATH="$HOME/.foundry/bin:$PATH"`. This is a
+shell environment change, not another installation step.
 
-Требуется Node.js 20 или новее и стабильный Foundry. Установка описана в README.
-`node_modules`, Foundry build output и секреты остаются локальными; спецификация,
-workflow, status и deployment-артефакты коммитятся.
+Node.js 20 or newer and stable Foundry are required. Installation is documented
+in the README. `node_modules`, Foundry build output and secrets remain local.
+The specification, workflow, status and deployment artifacts are committed.
 
-Локальный файл, исключённый `.gitignore`, не может владеть обязательным состоянием
-проекта. Если без факта нельзя корректно продолжить работу на другой машине, этот
-факт должен находиться в одном из трёх документов из начала файла.
+A local file excluded by `.gitignore` cannot own required project state. If work
+cannot continue correctly on another machine without a fact, that fact must be
+in one of the three documents listed at the start of this file.
 
-## Публичная атрибуция
+## Public attribution
 
-Названия внутренних ролей и устройство чатов нужны только для контроля процесса.
-В README, публичных отчётах, коммитах и submission-материалах не добавляется
-AI-атрибуция или история внутренних чатов, если координатор явно этого не запросил.
-Публичный текст описывает решения, свидетельства и ограничения проекта.
+Internal role names and chat organization exist only to control the process. Do
+not add AI attribution or internal chat history to the README, public reports,
+commits or submission materials unless the coordinator explicitly requests it.
+Public text describes decisions, evidence and limitations.
 
-## Зафиксированное исключение v0.4.4
+## Recorded v0.4.4 exception
 
-В v0.4.4 код, тесты и живая приёмка появились до окончательной редакции документа и
-вошли с ней в один коммит. Слепой агент реализацию не видел, а смысловые решения
-были приняты до кода, поэтому независимость решений сохранилась. Независимость
-формулировок доказать нельзя. Это ограничение записано в `docs/STATUS.md` и не
-исправляется ретроспективным spec-only коммитом.
+In v0.4.4, code, tests and live acceptance appeared before the final document
+revision and entered the same commit. The blind agent did not see the
+implementation, and semantic decisions preceded the code, so decision
+independence was preserved. Wording independence cannot be proved. This
+limitation is recorded in `docs/STATUS.md` and is not repaired with a
+retrospective specification-only commit.
 
-Начиная с v0.4.5 порядок этого документа обязателен.
+This workflow is mandatory from v0.4.5 onward.
