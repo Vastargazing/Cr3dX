@@ -118,7 +118,7 @@ tests и typecheck. Пока точные команды в README достат�
 сохранён до merge и восстановлен после разрешения конфликтов README/STATUS; UI и
 его package scripts не переписывались.
 
-README сокращён с 680 до 205 строк. Он оставляет product story, одну Mermaid
+README сокращён с 680 до 207 строк. Он оставляет product story, одну Mermaid
 схему, live result, trust boundary, актуальные адреса, локальный quickstart,
 dashboard, contributor path и ссылки. Полный state-changing S5 процесс,
 credentials, recovery и legacy fixture вынесены в `docs/S5_LIVE_RUNBOOK.md`.

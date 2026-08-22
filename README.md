@@ -1,6 +1,6 @@
 # Cr3dX
 
-<img width="280" height="280" alt="Cr3dX logo" src="https://github.com/user-attachments/assets/2b62b180-af9d-4176-b797-8b93820fb709" />
+<img width="280" height="280" alt="Cr3dX logo" src="assets/logo/cr3dx-logo.png" />
 
 **Verified cross-chain credit.** Money moves on Ethereum Sepolia. Credit state
 lives on Creditcoin. Attestcoin is the only connection: no trusted relayer,
@@ -30,8 +30,8 @@ overdue. That dependency is the point of the integration.
 flowchart LR
     I[Investor] -->|fund| G[Sepolia Gateway]
     R[Borrower] -->|repay| G
-    G -->|direct USDC| R
-    G -->|direct USDC| I
+    G -->|funding: USDC to borrower| R
+    G -->|repayment: USDC to investor| I
     G -->|transaction + event| A[Attestcoin proof builder]
     A -->|fresh proof| W[Permissionless worker]
     W -->|submitAndApply| D[Creditcoin Deals]
@@ -49,8 +49,8 @@ The complete path works on live testnets with no mocked step:
 
 - a deal was opened on Creditcoin, funded by a real Sepolia USDC transfer,
   proven, financed, repaid and closed as `PAID_ON_TIME`;
-- the accepted two-run S5 scenario moved the score `500 → 525 → 550`, ended with
-  zero exposure and kept two deliberately unfunded deals as 2.2 USDC reserve;
+- the two-run S5 scenario moved the score `500 → 525 → 550`, ended with zero exposure,
+  left two deals deliberately unfunded and accumulated 2.2 USDC of reserve;
 - funding from the wrong investor was proven but classified permanently as
   `WRONG_INVESTOR` rather than changing the deal;
 - the S6 worker carried repayment-before-funding through `VERIFIED_PENDING`,
@@ -65,10 +65,10 @@ Exact hashes, blocks, gas, timing and state snapshots are in
 
 ## Read-only dashboard
 
-The dashboard in [`ui/`](ui/) explains the accepted S6 snapshot and can repeat
+The dashboard in [`ui/`](ui/) explains the recorded S6 snapshot and can repeat
 public Creditcoin view calls without a wallet, signer or private configuration.
 Snapshot and live observation remain visibly separate; failed refreshes cannot
-rewrite accepted evidence.
+rewrite recorded evidence.
 
 ```sh
 npm run ui:dev
@@ -109,7 +109,7 @@ Four constraints shape the contract split:
 | Credit state and deployment target | Creditcoin3 Testnet | 102031 |
 | Settlement and proof source | Ethereum Sepolia | 11155111 |
 
-The accepted asset is Sepolia USDC at
+The token used is Sepolia USDC at
 [`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238),
 with 6 decimals. The address, not the symbol, is the security anchor.
 
@@ -150,7 +150,7 @@ npm run test:scripts
 npm run typecheck
 ```
 
-The accepted baseline is 141/141 Foundry tests, including 8 invariant/property
+The current verified baseline is 141/141 Foundry tests, including 8 invariant/property
 suites, plus 10/10 TypeScript file suites. The invariant run can spend several
 minutes without output. During edits, use
 `forge test --no-match-path 'test/Cr3dXInvariants.t.sol'` for a faster loop; run
@@ -181,7 +181,7 @@ are evidence and historical review material, not the current task list.
 | `test/` | Foundry unit, fuzz and invariant coverage |
 | `scripts/` | TypeScript probe, capture, deployment and live scenario tooling |
 | `worker/` | Permissionless proof worker |
-| `ui/` | Read-only dashboard: accepted snapshot plus public RPC observation |
+| `ui/` | Read-only dashboard: recorded snapshot plus public RPC observation |
 | `deployments/` | Current and superseded live addresses |
 | `data/` | Committed probe and live-run evidence |
 | `docs/` | Specification, runbooks, measurements, status and verification |

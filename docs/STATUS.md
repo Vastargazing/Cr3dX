@@ -47,7 +47,7 @@ package scripts и его evidence приняты без изменения. И�
 dashboard ниже сохраняет состояние на момент своего коммита; текущий факт merge
 зафиксирован здесь.
 
-README сокращён с 680 до 205 строк и теперь служит входом в проект: назначение,
+README сокращён с 680 до 207 строк и теперь служит входом в проект: назначение,
 одна схема, live result, компактная trust boundary, адреса, dashboard, локальный
 quickstart, contributor path и ссылки. Credentials, state-changing S5 modes,
 recovery и legacy fixture перенесены без live-запуска в
@@ -55,6 +55,12 @@ recovery и legacy fixture перенесены без live-запуска в
 документах. Существующий `assets/Cr3dX_RWA_Deck_v1.pptx` не открывался и не
 изменялся; он включён как 56 KB presentation artifact, чтобы ссылка README не
 была битой.
+
+Финальный polish не расширяет README: логотип получил стабильный путь
+`assets/logo/cr3dx-logo.png` и теперь загружается из репозитория, его blob не
+изменился. Mermaid различает funding в сторону borrower и repayment в сторону
+investor; тяжёлая фраза про reserve упрощена, а процессное `accepted` заменено на
+product-facing формулировки.
 
 ---
 
