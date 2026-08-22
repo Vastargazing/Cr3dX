@@ -91,8 +91,8 @@ invariants и явно требует полный `npm test` перед handoff
 Отслеживаемый проектный логотип лежал в `personal/logo/`, хотя предыдущий cleanup
 уже подтвердил, что это публичный проектный asset. Каталог перенесён в `assets/`,
 а его назначение добавлено в repository layout. Исторический cleanup-report не
-переписан: он сохраняет путь, существовавший в проверенном snapshot. Локальный
-deck перемещён вместе с каталогом, но остаётся untracked и не входит в эту правку.
+переписан: он сохраняет путь, существовавший в проверенном snapshot. На первом
+pass локальный deck был перемещён вместе с каталогом, но оставался untracked.
 
 ## Выполненная проверка
 
@@ -110,3 +110,22 @@ deck перемещён вместе с каталогом, но остаётс�
 вроде `npm run check:quick`, которая объединит быстрый Foundry-прогон, TypeScript
 tests и typecheck. Пока точные команды в README достаточны и не добавляют новый
 слой tooling.
+
+## Follow-up: README как вход, документация как доказательство
+
+После merge dashboard PR #5 ветка onboarding синхронизирована с точным
+`origin/main@7933abea6c3b5cb721052a4f36d9882eaf578ba3`. Рабочий editorial diff был
+сохранён до merge и восстановлен после разрешения конфликтов README/STATUS; UI и
+его package scripts не переписывались.
+
+README сокращён с 680 до 205 строк. Он оставляет product story, одну Mermaid
+схему, live result, trust boundary, актуальные адреса, локальный quickstart,
+dashboard, contributor path и ссылки. Полный state-changing S5 процесс,
+credentials, recovery и legacy fixture вынесены в `docs/S5_LIVE_RUNBOOK.md`.
+Worker operation остаётся в существующем S6 runbook, измерения — в Attestcoin
+integration note, история — в STATUS, а verification/audit trees не используются
+как основной маршрут чтения.
+
+Dashboard теперь указан как часть `main` и запускается фактическим
+`npm run ui:dev`. Deck добавлен как presentation artifact без чтения или изменения
+содержимого, чтобы относительная ссылка из README разрешалась в репозитории.

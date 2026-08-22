@@ -37,9 +37,24 @@ read-only домашний каталог не позволяет обновит
 
 Каталог `personal/` переименован в `assets/`: отслеживаемый проектный логотип
 перенесён без изменения содержимого, а назначение каталога добавлено в repository
-layout README. Существующий deck теперь находится в
-`assets/Cr3dX_RWA_Deck_v1.pptx`; его содержимое не читалось, файл остаётся
-untracked и не включается в documentation-only staging.
+layout README.
+
+В follow-up editorial pass ветка безопасно синхронизирована с
+`origin/main@7933abea6c3b5cb721052a4f36d9882eaf578ba3`, куда уже вошёл dashboard из
+PR #5. Незавершённый README/S5/deck diff до merge был сохранён path-scoped stash;
+после разрешения конфликтов README и STATUS восстановлен поверх UI merge. UI,
+package scripts и его evidence приняты без изменения. Историческая запись
+dashboard ниже сохраняет состояние на момент своего коммита; текущий факт merge
+зафиксирован здесь.
+
+README сокращён с 680 до 205 строк и теперь служит входом в проект: назначение,
+одна схема, live result, компактная trust boundary, адреса, dashboard, локальный
+quickstart, contributor path и ссылки. Credentials, state-changing S5 modes,
+recovery и legacy fixture перенесены без live-запуска в
+`docs/S5_LIVE_RUNBOOK.md`; измерения и история остаются в своих evidence/status
+документах. Существующий `assets/Cr3dX_RWA_Deck_v1.pptx` не открывался и не
+изменялся; он включён как 56 KB presentation artifact, чтобы ссылка README не
+была битой.
 
 ---
 
