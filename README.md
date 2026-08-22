@@ -162,16 +162,16 @@ handoff.
 Read in this order:
 
 1. [`docs/WORKFLOW.md`](docs/WORKFLOW.md) for sources of truth and change order.
-2. [`docs/cr3dx-spec-v0.4.0-final.md`](docs/cr3dx-spec-v0.4.0-final.md) for
-   normative behavior. The filename is historical; the revision inside is v0.4.8.
-   The specification is written in Russian;
-   [`docs/SPEC_DIGEST_EN.md`](docs/SPEC_DIGEST_EN.md) is a non-normative English
-   guide to its state model, evidence classification and accounting rules.
-3. The top of [`docs/STATUS.md`](docs/STATUS.md) for current implementation,
-   deployment and acceptance state.
-4. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
+2. [`docs/SPEC_DIGEST_EN.md`](docs/SPEC_DIGEST_EN.md) for the independently
+   reviewed, non-normative English guide to behavior.
+3. The frozen [Russian specification](docs/cr3dx-spec-v0.4.0-final.md) only when
+   the authoritative source or provenance is needed. Its historical filename
+   contains v0.4.0, but the revision inside is v0.4.8.
+4. [`docs/STATUS_EN.md`](docs/STATUS_EN.md) for current implementation,
+   deployment, verification and acceptance state.
+5. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
    `Cr3dXDeals` → `Cr3dXCredit`, then their tests.
-5. The S5 or S6 runbook only when the task touches live operation.
+6. The S5 or S6 runbook only when the task touches live operation.
 
 The README explains the project. The specification defines behavior. `STATUS`
 records what was implemented and observed. `docs/verification/` and `docs/audit/`
@@ -193,6 +193,10 @@ are evidence and historical review material, not the current task list.
 
 ## Project links
 
+- [English current status](docs/STATUS_EN.md) and
+  [English specification digest](docs/SPEC_DIGEST_EN.md).
+- [English audit index](docs/audit/README.md) and the complete
+  [Russian STATUS](docs/STATUS.md) chronological source journal.
 - [Read-only dashboard](ui/) and its [local run instructions](ui/README.md).
 - [Project deck](assets/Cr3dX_RWA_Deck_v1.pptx).
 - [S5 live testnet runbook](docs/S5_LIVE_RUNBOOK.md): credentials, preflight,
@@ -202,10 +206,8 @@ are evidence and historical review material, not the current task list.
   safety and exact-envelope recovery.
 - [Attestcoin integration](docs/ATTESTCOIN_INTEGRATION.md): measured protocol
   behavior, proof boundaries and upstream differences.
-- [Specification](docs/cr3dx-spec-v0.4.0-final.md) and its
-  [English digest](docs/SPEC_DIGEST_EN.md),
-  [current status](docs/STATUS.md), [verification evidence](docs/verification/)
-  and [historical audits](docs/audit/).
+- [Frozen specification](docs/cr3dx-spec-v0.4.0-final.md) and
+  [verification evidence](docs/verification/).
 
 The live S1-S5 path is intentionally absent from this README because it sends
 transactions and changes testnet state. Use the runbook, read it completely, and
