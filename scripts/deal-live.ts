@@ -12,7 +12,18 @@
  */
 import {spawn} from 'node:child_process';
 import {mkdirSync, writeFileSync} from 'node:fs';
-import {Contract, formatEther, formatUnits, Interface, keccak256, parseEther} from 'ethers';
+import {
+  Contract,
+  formatEther,
+  formatUnits,
+  Interface,
+  keccak256,
+  parseEther,
+  type Result,
+  type TransactionReceipt,
+  type TransactionRequest,
+  type Wallet,
+} from 'ethers';
 import {config, warnIfProxyIgnored} from './lib/config.js';
 import {readDeployment} from './lib/artifacts.js';
 import {
@@ -150,10 +161,10 @@ interface Context {
   mode: LiveMode;
   sepolia: ReturnType<typeof evmProvider>;
   creditcoin: ReturnType<typeof evmProvider>;
-  investor: any;
-  borrower: any;
-  creditcoinInvestor: any;
-  creditcoinBorrower: any;
+  investor: Wallet;
+  borrower: Wallet;
+  creditcoinInvestor: Wallet;
+  creditcoinBorrower: Wallet;
   gatewayAddress: string;
   gateway: Contract;
   gatewayAsBorrower: Contract;
@@ -188,19 +199,12 @@ function parsePositiveEnv(name: string, fallback: bigint): bigint {
   return value;
 }
 
-function feeOf(receipt: any): bigint {
-  if (typeof receipt.fee === 'bigint') return receipt.fee;
-  const price = receipt.gasPrice ?? receipt.effectiveGasPrice;
-  if (typeof price !== 'bigint') throw new Error(`Receipt ${receipt.hash ?? ''} has no effective gas price`);
-  return receipt.gasUsed * price;
-}
-
 function recordCost(
   run: number | null,
   step: string,
   chain: 'sepolia' | 'creditcoin',
   tx: string,
-  receipt: any,
+  receipt: TransactionReceipt,
   roots?: number,
 ): void {
   costs.push({
@@ -209,7 +213,8 @@ function recordCost(
     chain,
     tx,
     gasUsed: receipt.gasUsed.toString(),
-    feeNative: feeOf(receipt).toString(),
+    // ethers v6 derives `fee` as gasUsed * gasPrice from the receipt itself.
+    feeNative: receipt.fee.toString(),
     ...(roots === undefined ? {} : {continuityRoots: roots}),
   });
 }
@@ -810,8 +815,8 @@ async function ensureAllowance(ctx: Context, run: number, token: Contract, owner
 async function send(
   ctx: Context,
   run: number,
-  signer: any,
-  request: () => Promise<any>,
+  signer: Wallet,
+  request: () => Promise<TransactionRequest>,
   step: string,
   chain: 'sepolia' | 'creditcoin',
 ): Promise<{hash: string; blockNumber: number}> {
@@ -846,10 +851,10 @@ async function proveAndApply(ctx: Context, run: number, txHash: string, step: st
  */
 async function sendKnownTransaction(
   provider: ReturnType<typeof evmProvider>,
-  signer: any,
-  request: () => Promise<any>,
+  signer: Wallet,
+  request: () => Promise<TransactionRequest>,
   label: string,
-): Promise<{hash: string; receipt: any}> {
+): Promise<{hash: string; receipt: TransactionReceipt}> {
   const skeleton = await withRetry(`${label} populate`, 5, request);
   const populated = await withRetry(`${label} transaction fields`, 5, () => signer.populateTransaction(skeleton));
   const raw = await signer.signTransaction(populated);
@@ -861,7 +866,7 @@ async function sendKnownTransaction(
   let broadcastAttempts = 0;
   let lastError: unknown;
   while (Date.now() < deadline) {
-    let receipt: any = null;
+    let receipt: TransactionReceipt | null = null;
     try {
       receipt = await provider.getTransactionReceipt(hash);
     } catch (error) {
@@ -902,9 +907,9 @@ async function sendKnownTransaction(
   throw new Error(`${label}: no successful receipt for known transaction ${hash} within 10 minutes (${errMessage(lastError)})`);
 }
 
-function parseEvents(iface: Interface, receipt: any, address: string): {name: string; args: any}[] {
-  const parsed: {name: string; args: any}[] = [];
-  for (const entry of receipt.logs ?? []) {
+function parseEvents(iface: Interface, receipt: TransactionReceipt, address: string): {name: string; args: Result}[] {
+  const parsed: {name: string; args: Result}[] = [];
+  for (const entry of receipt.logs) {
     if (entry.address.toLowerCase() !== address.toLowerCase()) continue;
     const event = iface.parseLog({topics: entry.topics, data: entry.data});
     if (event) parsed.push({name: event.name, args: event.args});

@@ -53,7 +53,9 @@ any `PAID_* -> FINANCED`, any `PAID_* -> DEFAULTED`.
 - `markDefaulted` is permissionless and is valid only from `FINANCED`, when the
   attested source height exceeds `dueBlock + attestationGracePeriod` (600 source
   blocks on the current deployment). Every other status, including an unknown
-  deal, reverts with `NotDefaultable`; too early reverts with `DefaultTooEarly`.
+  deal, reverts with the named error `NotDefaultable`. A call before the height
+  threshold also reverts; the specification names no error for it, the
+  implementation calls it `DefaultTooEarly`.
 - There is no cancel, no reserve release and no administrative function. A
   created deal can accept funding forever. Funding an overdue deal is applied, and
   the deal then immediately qualifies for default. Creating a deal whose
@@ -135,9 +137,11 @@ under one continuity proof) prove, record and apply in one transaction;
 to the verifier stays open to anyone. That is the complete state-changing
 surface together with `createDeal` and `markDefaulted`.
 
-**Verifier refusals.** A proof of a transaction with receipt `status != 1`
-reverts (`SourceTransactionFailed`). A verified transaction with no gateway log
-reverts (`NoRelevantEvidence`). An identifier recorded before reverts
+**Verifier refusals.** A proof of a transaction with receipt `status != 1` is
+refused: the precompile does not check the status, the verifier must (the
+specification requires the check, the implementation names the error
+`SourceTransactionFailed`). A verified transaction with no gateway log reverts
+(`NoRelevantEvidence`). An identifier recorded before reverts
 (`EvidenceAlreadyRecorded`), and inside a batch that failure is atomic. Every
 matching log of a transaction produces exactly one fact; a single transaction
 carrying two gateway events yields two.
@@ -171,8 +175,8 @@ identifier; there is no automatic sweep.
 - otherwise, in `FINANCED`, `DEFAULTED`, `PAID_LATE` and `PAID_ON_TIME` alike:
   `repaidAmount += amount`, and if the proven source height is at or below
   `dueBlock` also `onTimeRepaid += amount`. Amounts are never trimmed to the
-  remaining balance. The payer is not checked; a third party may repay. Then the
-  canonical outcome is recomputed.
+  remaining balance. The specification lists no check on the payer, so a third
+  party may repay. Then the canonical outcome is recomputed.
 
 Timeliness comes from the source block height of the payment, so a slow worker
 cannot turn an on-time payment into a late one.
@@ -218,8 +222,9 @@ The clamp is applied once to the finished sum, so the score is a pure function o
 the multiset of outcomes (INV-5). Changing an outcome decrements the old
 counter and increments the new one; writing the same outcome again changes
 nothing, including `closedAtBlock`. The three counters are a cache; the
-per-deal outcomes and the borrower's deal list are canonical, and
-`scoreFromOutcomes` recomputes the score from them on chain.
+per-deal outcomes and the borrower's deal list are canonical, and INV-5 says the
+two always agree (the implementation exposes the recomputation on chain as
+`scoreFromOutcomes`).
 
 ## 7. Mandatory INV-20 regression
 
