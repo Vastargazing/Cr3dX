@@ -59,8 +59,8 @@ The complete path works on live testnets with no mocked step:
 - Phase B replay matched `63/63` sealed traces: 16 independently derived and 47
   prescribed by the specification.
 
-Exact hashes, blocks, gas, timing and state snapshots are in
-[`docs/STATUS.md`](docs/STATUS.md), [`data/live/`](data/live/) and the
+Exact hashes, blocks, gas, timing and state snapshots are indexed from
+[`docs/STATUS_EN.md`](docs/STATUS_EN.md), [`data/live/`](data/live/) and the
 [`v0.4.8 verification checkpoint`](docs/verification/v0.4.8-phase-b/README.md).
 
 The role-isolated [development and verification workflow](docs/WORKFLOW.md)
@@ -172,12 +172,9 @@ Read in this order:
    deployment, verification and acceptance state.
 4. [`docs/SPEC_DIGEST_EN.md`](docs/SPEC_DIGEST_EN.md) when a shorter behavioral
    overview is enough.
-5. The frozen [Russian Phase B input](docs/cr3dx-spec-v0.4.0-final.md) only when
-   exact sealed provenance is needed. Its historical filename contains v0.4.0,
-   but the revision inside is v0.4.8.
-6. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
+5. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
    `Cr3dXDeals` → `Cr3dXCredit`, then their tests.
-7. The S5 or S6 runbook only when the task touches live operation.
+6. The S5 or S6 runbook only when the task touches live operation.
 
 The README explains the project. The specification defines behavior. `STATUS`
 records what was implemented and observed. `docs/verification/` and `docs/audit/`
@@ -202,8 +199,8 @@ are evidence and historical review material, not the current task list.
 - [Complete English specification](docs/CR3DX_SPEC_V0.4.8_EN.md),
   [current status](docs/STATUS_EN.md), and the shorter
   [specification digest](docs/SPEC_DIGEST_EN.md).
-- [English audit index](docs/audit/README.md) and the complete
-  [Russian STATUS](docs/STATUS.md) chronological source journal.
+- [English audit index](docs/audit/README.md) and the current
+  [English status](docs/STATUS_EN.md).
 - [Read-only dashboard](ui/) and its [local run instructions](ui/README.md).
 - [Project deck](assets/Cr3dX_RWA_Deck_v1.pptx).
 - [S5 live testnet runbook](docs/S5_LIVE_RUNBOOK.md): credentials, preflight,
@@ -213,8 +210,8 @@ are evidence and historical review material, not the current task list.
   safety and exact-envelope recovery.
 - [Attestcoin integration](docs/ATTESTCOIN_INTEGRATION.md): measured protocol
   behavior, proof boundaries and upstream differences.
-- [Frozen Russian Phase B input](docs/cr3dx-spec-v0.4.0-final.md) and
-  [verification evidence](docs/verification/).
+- [Verification evidence](docs/verification/), including the sealed Phase B
+  inputs, manifests and replay reports.
 
 The live S1-S5 path is intentionally absent from this README because it sends
 transactions and changes testnet state. Use the runbook, read it completely, and

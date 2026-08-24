@@ -1,15 +1,16 @@
 # Specification ambiguities
 
-Owned by the independent invariant-test agent. **The main developer does not fill
-this in.**
+Owned by the independent invariant-test workspace. **The implementation author
+does not fill this in.**
 
 ## What this file is for
 
-The agent writing invariant tests works from `docs/cr3dx-spec-v0.4.0-final.md`
-without reading the implementation. That separation only produces useful tests if
-the agent never has to guess. Where the specification admits two readings, the
-guess would be worthless twice over: a coin flip against the author's intent, and
-a silent invitation to shape the model around whatever the code happens to do.
+The invariant-test author works from `docs/cr3dx-spec-v0.4.0-final.md` without
+reading the implementation. That separation only produces useful tests if the
+independent workspace never has to guess. Where the specification admits two
+readings, the guess would be worthless twice over: a coin flip against the
+author's intent, and a silent invitation to shape the model around whatever the
+code happens to do.
 
 So: when a passage supports more than one reading, do not pick one. Record both
 here and keep going. A recorded ambiguity is a finding about the specification. A
@@ -55,9 +56,10 @@ distinguish is a wording preference, not an ambiguity.
 
 ## Resolution
 
-Resolutions are made by the specification author, not here and not by the test
-agent. When one lands, the specification changes with a note in its changelog,
-and the block below is annotated with the version that resolved it.
+Resolutions are made by the specification author, not here and not by the
+invariant-test author. When one lands, the specification changes with a note in
+its changelog, and the block below is annotated with the version that resolved
+it.
 
 ---
 

@@ -206,7 +206,7 @@ The measured formula was:
 
 The same three transactions were observed promptly and about an hour later:
 
-| Fixture | Roots, prompt | Roots, checkpoint-anchored | Gas, prompt | Gas, later | Exact delta |
+| Fixture | Roots, immediate | Roots, checkpoint-anchored | Gas, immediate | Gas, later | Exact delta |
 |---|---:|---:|---:|---:|---:|
 | Double funding | 2 | 62 | `317,037` | `350,781` | `33,744` |
 | Funding | 8 | 68 | `158,749` | `192,493` | `33,744` |
@@ -218,7 +218,7 @@ observed delta was exactly `33,744` in all three pairs. This comparison controls
 the source transactions and observes the changed proof path. It does not make
 elapsed time itself a gas-cost cause.
 
-Under the observed cadence, a prompt proof can carry at most 11 roots and a
+Under the observed cadence, an immediate proof can carry at most 11 roots and a
 checkpoint-anchored proof at most 101, both below the 500-root ceiling. This is
 a cost and freshness objective, not a fact-expiry deadline or SLA.
 

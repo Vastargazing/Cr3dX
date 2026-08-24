@@ -1,8 +1,8 @@
 # S6 worker architecture
 
-The sole normative input is commit
+The sole normative implementation input is commit
 `8759a1649b489e0d7d0a163471063d908813b589`, whose
-`docs/S6_WORKER_SPEC.md` has SHA-256
+`docs/S6_WORKER_SPEC.md` in that commit tree has SHA-256
 `901628b5c8dbaab23fd09e6fa0b8a0b5ed6df5b05d65ba484df87911798289fc`.
 This implementation changes no contract and has no worker-only authority.
 

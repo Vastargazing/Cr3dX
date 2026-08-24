@@ -762,6 +762,6 @@ The final review must verify the following closure matrix against this exact fil
 | External success occurs after signing but before broadcast | Persisted exact bytes are still broadcast once to resolve the chosen nonce, section 7.2. |
 | Global nonce blockage mutates unrelated task state | Separate `BLOCKED_BY_GLOBAL_LANE` overlay, sections 5.1 and 6.3. |
 
-After this draft is accepted, it is copied into the repository in a document-only commit based on the target `main`. That commit changes no contracts, scripts, tests or live records. Its exact hash is the sole authorization base for implementation on `s6/worker`; implementation must not begin from an uncommitted prompt or a sidebar copy.
+After this draft is accepted, it is copied into the repository in a document-only commit based on the target `main`. That commit changes no contracts, scripts, tests or live records. Its exact hash is the sole authorization base for implementation on `s6/worker`; implementation starts only from that committed document artifact, never from uncommitted instructions or an untracked copy.
 
 Final review is a safety/consistency gate. A new blocker must identify a reachable counterexample, conflicting normative rules or a missing action for an already claimed failure mode. New product capabilities or availability improvements are deferred unless they are necessary to preserve a stated safety property.

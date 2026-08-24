@@ -223,7 +223,8 @@ accepted while v0.4.5 changed text only.
 The required order was target specification, independent blind model and
 implementation, then comparison. In fact code, tests, and live acceptance
 preceded the final document revision and entered the same commit. The blind
-agent did not see the implementation and semantic decisions preceded code, so
+reference-model workspace did not expose the implementation and semantic
+decisions preceded code, so
 decision independence survived. Wording independence cannot be proved because
 the document was written next to completed implementation. No retrospective
 spec-only commit was fabricated.
