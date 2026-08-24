@@ -63,6 +63,10 @@ Exact hashes, blocks, gas, timing and state snapshots are in
 [`docs/STATUS.md`](docs/STATUS.md), [`data/live/`](data/live/) and the
 [`v0.4.8 verification checkpoint`](docs/verification/v0.4.8-phase-b/README.md).
 
+The role-isolated [development and verification workflow](docs/WORKFLOW.md)
+records the sealed inputs, blind model boundary, independent read-only review,
+hash handoffs and the point where implementation and model were first compared.
+
 ## Read-only dashboard
 
 The dashboard in [`ui/`](ui/) explains the recorded S6 snapshot and can repeat
@@ -162,16 +166,18 @@ handoff.
 Read in this order:
 
 1. [`docs/WORKFLOW.md`](docs/WORKFLOW.md) for sources of truth and change order.
-2. [`docs/SPEC_DIGEST_EN.md`](docs/SPEC_DIGEST_EN.md) for the independently
-   reviewed, non-normative English guide to behavior.
-3. The frozen [Russian specification](docs/cr3dx-spec-v0.4.0-final.md) only when
-   the authoritative source or provenance is needed. Its historical filename
-   contains v0.4.0, but the revision inside is v0.4.8.
-4. [`docs/STATUS_EN.md`](docs/STATUS_EN.md) for current implementation,
+2. The complete [English v0.4.8 specification](docs/CR3DX_SPEC_V0.4.8_EN.md)
+   for target behavior, revision history, invariants and implementation rules.
+3. [`docs/STATUS_EN.md`](docs/STATUS_EN.md) for current implementation,
    deployment, verification and acceptance state.
-5. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
+4. [`docs/SPEC_DIGEST_EN.md`](docs/SPEC_DIGEST_EN.md) when a shorter behavioral
+   overview is enough.
+5. The frozen [Russian Phase B input](docs/cr3dx-spec-v0.4.0-final.md) only when
+   exact sealed provenance is needed. Its historical filename contains v0.4.0,
+   but the revision inside is v0.4.8.
+6. Production contracts in order: `Cr3dXGateway` → `Cr3dXVerifier` →
    `Cr3dXDeals` → `Cr3dXCredit`, then their tests.
-6. The S5 or S6 runbook only when the task touches live operation.
+7. The S5 or S6 runbook only when the task touches live operation.
 
 The README explains the project. The specification defines behavior. `STATUS`
 records what was implemented and observed. `docs/verification/` and `docs/audit/`
@@ -193,8 +199,9 @@ are evidence and historical review material, not the current task list.
 
 ## Project links
 
-- [English current status](docs/STATUS_EN.md) and
-  [English specification digest](docs/SPEC_DIGEST_EN.md).
+- [Complete English specification](docs/CR3DX_SPEC_V0.4.8_EN.md),
+  [current status](docs/STATUS_EN.md), and the shorter
+  [specification digest](docs/SPEC_DIGEST_EN.md).
 - [English audit index](docs/audit/README.md) and the complete
   [Russian STATUS](docs/STATUS.md) chronological source journal.
 - [Read-only dashboard](ui/) and its [local run instructions](ui/README.md).
@@ -206,7 +213,7 @@ are evidence and historical review material, not the current task list.
   safety and exact-envelope recovery.
 - [Attestcoin integration](docs/ATTESTCOIN_INTEGRATION.md): measured protocol
   behavior, proof boundaries and upstream differences.
-- [Frozen specification](docs/cr3dx-spec-v0.4.0-final.md) and
+- [Frozen Russian Phase B input](docs/cr3dx-spec-v0.4.0-final.md) and
   [verification evidence](docs/verification/).
 
 The live S1-S5 path is intentionally absent from this README because it sends

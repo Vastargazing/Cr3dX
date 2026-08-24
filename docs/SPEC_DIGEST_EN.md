@@ -1,13 +1,13 @@
 # Cr3dX specification digest
 
-> **Non-normative English guide.** The frozen Russian v0.4.8 specification in
-> [`cr3dx-spec-v0.4.0-final.md`](cr3dx-spec-v0.4.0-final.md) (commit
-> `cbc382b39fabd9a34b218fe6ff35699e18bdca4a`) remains authoritative. Where this
-> digest and the specification disagree, the specification wins and this file is
-> the one with the defect.
+> **Non-normative quick guide.** The complete public specification is
+> [`CR3DX_SPEC_V0.4.8_EN.md`](CR3DX_SPEC_V0.4.8_EN.md). The frozen Russian
+> v0.4.8 file from commit `cbc382b39fabd9a34b218fe6ff35699e18bdca4a`
+> remains the immutable input used by Phase A/B. Where this digest and the full
+> specification disagree, this digest is the one with the defect.
 
 This digest restates the state model, evidence classification and accounting
-rules of specification sections 3 and 4 for readers who do not read Russian.
+rules of full-specification sections 3 and 4 for a faster first read.
 It introduces no normative rule; current-deployment values and
 implementation-only names are labelled explicitly. The invariants INV-1 to
 INV-22 already exist in English, each

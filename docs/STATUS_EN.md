@@ -10,12 +10,14 @@ It preserves implementation, deployment, acceptance and editorial history, with
 the newest entry first. This file is a compact, non-normative English index of
 the current state. It is not a translation and must not become a second ledger.
 
-The frozen Russian specification v0.4.8 remains the normative source. Its commit
-is `cbc382b39fabd9a34b218fe6ff35699e18bdca4a`, and the normative package SHA-256
-is `c8119bb3b8aba49348bc467ccb085bf4ad4afc98781463e3c644d091b12c7b80`.
-[`SPEC_DIGEST_EN.md`](SPEC_DIGEST_EN.md) is a non-normative English guide. An
-independent specification-side review closed four boundary and wording findings
-without finding a new semantic defect.
+[`CR3DX_SPEC_V0.4.8_EN.md`](CR3DX_SPEC_V0.4.8_EN.md) is the complete public
+English specification. The Russian v0.4.8 file remains the immutable input used
+by the completed Phase A/B verification chain. Its commit is
+`cbc382b39fabd9a34b218fe6ff35699e18bdca4a`, and the normative package SHA-256 is
+`c8119bb3b8aba49348bc467ccb085bf4ad4afc98781463e3c644d091b12c7b80`.
+[`SPEC_DIGEST_EN.md`](SPEC_DIGEST_EN.md) is a shorter non-normative guide. An
+independent specification-side review closed four earlier digest boundary and
+wording findings without finding a new semantic defect.
 
 ## Current implementation and deployment
 
@@ -116,8 +118,9 @@ Cr3dX defects.
 ## Detailed sources
 
 - [Russian chronological source journal](STATUS.md)
+- [Complete English specification](CR3DX_SPEC_V0.4.8_EN.md)
 - [English specification digest](SPEC_DIGEST_EN.md)
-- [Frozen Russian specification](cr3dx-spec-v0.4.0-final.md)
+- [Frozen Russian Phase B input](cr3dx-spec-v0.4.0-final.md)
 - [Attestcoin integration measurements and source notes](ATTESTCOIN_INTEGRATION.md)
 - [Phase B verification checkpoint](verification/v0.4.8-phase-b/README.md)
 - [S5 live runbook](S5_LIVE_RUNBOOK.md)

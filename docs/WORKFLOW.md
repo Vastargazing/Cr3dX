@@ -13,7 +13,7 @@ the documents.
 At the start of a new session, read in this order:
 
 1. `docs/WORKFLOW.md` for roles, access boundaries and phase order;
-2. `docs/cr3dx-spec-v0.4.0-final.md` for the current target semantics;
+2. `docs/CR3DX_SPEC_V0.4.8_EN.md` for the current target semantics;
 3. `docs/STATUS.md` for completed work, current addresses, evidence and open
    items;
 4. code and tests, only if the current chat role may access them.
@@ -26,6 +26,12 @@ observations. Code, tests or chain reads may reveal a mismatch, but they do not
 silently change one of these records: stop, report the exact conflict and
 reconcile it in the owning source. The README explains the project but does not
 define target behavior.
+
+The Russian `docs/cr3dx-spec-v0.4.0-final.md` remains the immutable source used
+by the completed v0.4.8 Phase A/B verification chain. It is retained for exact
+provenance, not as the public contributor entry point. A disagreement between
+the English v0.4.8 rendering and that sealed source is a translation defect,
+not permission to choose whichever wording is convenient.
 
 ## Roles and chats
 
