@@ -3,7 +3,10 @@
 This file is the portable owner of the process. It is committed with the
 repository and is mandatory for every new workstation and chat. A local
 instruction file, if present, memory, chat history and verbal agreements may
-help, but they do not replace this document.
+help only when they agree with the committed documents at the handed-off hash.
+On a conflict, the committed documents take precedence and the other context is
+stale by default. It may trigger a discrepancy report, but it cannot override
+the documents.
 
 ## Sources of truth
 
@@ -15,9 +18,14 @@ At the start of a new session, read in this order:
    items;
 4. code and tests, only if the current chat role may access them.
 
-The README explains the project but does not define target behavior. If behavior
-conflicts, the specification takes priority until the conflict is recorded in a
-new document revision.
+The reading order is not a global precedence order. `docs/WORKFLOW.md` governs
+process, roles and access boundaries. The specification governs target
+behavior. The latest applicable `docs/STATUS.md` entry and the tracked
+`deployments/*.json` ledgers record completed work, deployed addresses and live
+observations. Code, tests or chain reads may reveal a mismatch, but they do not
+silently change one of these records: stop, report the exact conflict and
+reconcile it in the owning source. The README explains the project but does not
+define target behavior.
 
 ## Roles and chats
 
@@ -34,6 +42,19 @@ coordinator:
 
 Agents do not transfer context to one another on their own and do not expand
 their access by assumption.
+
+### Read-only reviewer
+
+The reviewer receives explicitly scoped inputs and checks claims against their
+sources without editing the reviewed artifact. The response identifies exact
+evidence, counterexamples, severity and proposed replacement wording. The
+artifact author applies accepted changes.
+
+Reviewer acceptance does not authorize a merge, deployment or any other
+external action. Only the coordinator grants those permissions. A claim of
+independent review requires a separate chat from the artifact author. The
+reviewer does not expand its input scope by assumption and remains subject to
+all blind boundaries that apply before Phase B.
 
 ### Specification chat
 
@@ -151,6 +172,20 @@ it with the coordinator. A conflicting prompt must not be followed mechanically.
   repository.
 - Nothing in `main` is rewritten after the fact to create the appearance of
   independence.
+
+## Workspace isolation and concurrency
+
+- Only one agent may write to a checkout at a time.
+- Parallel write tasks use separate branches and worktrees. Concurrent edits to
+  the same document, especially `docs/STATUS.md`, are prohibited and the
+  coordinator serializes them.
+- Read-only review may run in parallel when it does not mutate the checkout or
+  expand the reviewer's allowed inputs.
+- Any directory designated as a sealed blind input or frozen verification
+  artifact is read-only, even when no other writer is active. Do not edit,
+  regenerate, format, build or run commands that create caches inside it.
+- Writable model workspaces, replay adapters and execution results live in
+  separate derived workspaces and receive their own hashes.
 
 ## Workstation portability
 
