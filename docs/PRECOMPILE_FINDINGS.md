@@ -66,7 +66,7 @@ The leaf contents (`common/eth/src/lib.rs:172-178`) come from `usc_abi_encoding:
 `status` and logs are included in the encoded bytes (`usc-abi-encoding-0.5.0/src/abi/v1.rs:32-59`):
 ```rust
 DynSolValue::Uint(U256::from(rx.status()), 8),   // status
-DynSolValue::Uint(U256::from(rx.gas_used), 64),  // gas_used  <-- см. предупреждение ниже
+DynSolValue::Uint(U256::from(rx.gas_used), 64),  // gas_used  <-- see the warning below
 DynSolValue::Array(rx.inner.logs().iter().map(|log| { /* address, topics[], data */ }) ...),
 DynSolValue::Bytes(log_blooms),
 ```
@@ -115,7 +115,7 @@ if block.transactions.is_empty() && receipts.is_empty() {
 ```rust
 pub fn serialize(&self) -> Vec<u8> {
     ...
-    bytes.extend_from_slice(self.header_hash.as_ref());   // header_hash подписывается
+    bytes.extend_from_slice(self.header_hash.as_ref());   // header_hash is signed
     bytes.extend_from_slice(self.root.as_bytes());
     ...
 }
@@ -356,7 +356,7 @@ The complete public function set across all six interfaces covers signature veri
 Expanded text search over all tracked files and extensions, including `outbox`, which revision 1 omitted:
 ```
 git grep -rlin "outbox\|inbox\|writabil\|writable" -- .
-→ checkpoint-builder/README.md   (ложное срабатывание: "output path is writable")
+→ checkpoint-builder/README.md   (false positive: "output path is writable")
 ```
 In `usc-testnet-bridge-examples`, the only "reverse" flow is an offchain worker that signs Sepolia transactions with the same key used on Creditcoin (`loan-flow/worker.ts:52,94,100`, `CREDITCOIN_WALLET_PRIVATE_KEY`). It is a trusted operator, not a proof.
 
@@ -372,7 +372,7 @@ In `usc-testnet-bridge-examples`, the only "reverse" flow is an offchain worker 
 // precompiles/block-prover/src/verify.rs
 pub const CONTINUITY_BLOCK_HASH_COST: u64 = 48;        // :30
 pub const GAS_STORAGE_LOOKUP: u64 = 2_600;             // :33
-pub const MAX_CONTINUITY_ROOTS: usize = 50_000;        // :52  (не газ)
+pub const MAX_CONTINUITY_ROOTS: usize = 50_000;        // :52  (not gas)
 pub const CALCULATE_TX_INDEX_BASE_COST: u64 = 10;      // :56
 pub const CALCULATE_TX_INDEX_ITERATION_COST: u64 = 18; // :58
 ```
@@ -425,10 +425,10 @@ fn log(&mut self, address: H160, topics: Vec<H256>, data: Vec<u8>) -> Result<(),
 **Magnitude.** Our calculated estimate uses the formula (`frontier_2@89b8cc6:precompiles/src/evm/costs.rs:26-52`): `G_LOG=375`, `G_LOGTOPIC=375`, `G_LOGDATA=8`. For `log3` with 3 topics and 32 bytes of data:
 
 ```
-375 + 3×375 + 32×8 = 1 756 gas на событие
+375 + 3×375 + 32×8 = 1,756 gas per event
 ```
 
-For a batch of 10, the undercharge is up to **17 560 gas** per call. The repeated `calculate_tx_index_impl` pass in the emit path is also uncharged.
+For a batch of 10, the undercharge is up to **17,560 gas** per call. The repeated `calculate_tx_index_impl` pass in the emit path is also uncharged.
 
 **Why this matters to us:** `verify` and `verifyAndEmit` cost the same not because the event is free, but because its cost is not charged. Planning a gas budget from the observed cost at this pin is risky. If the undercharge is addressed, which appears to be an unintended omission given the neighboring precompiles, the cost of `verifyAndEmit` will rise by about 1.8k per event and existing gas limits may no longer fit.
 

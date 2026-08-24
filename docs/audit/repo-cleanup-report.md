@@ -104,9 +104,9 @@ evidence-каталогов.
 Tracked symlinks, zero-byte files, `.gitkeep`, tracked empty/orphan directories и
 пустые project directories в чистом клоне отсутствуют.
 
-В рабочем checkout инструменты создали пустые `.agents/`, `agent/` и `.codex/`.
-Они не tracked, не представлены в git tree, не влияют на `git status` и в чистом
-клоне отсутствовали; это локальный контекст среды, а не содержимое проекта.
+В рабочем checkout несколько служебных директорий создаёт локальная среда
+разработки, а не проект. Они пустые, не tracked, не представлены в git tree, не
+влияют на `git status` и в чистом клоне отсутствовали.
 
 **Рекомендация:** изменений не требуется. Не добавлять placeholder-файлы ради
 локальных tool directories.

@@ -59,6 +59,14 @@ The complete path works on live testnets with no mocked step:
 - Phase B replay matched `63/63` sealed traces: 16 independently derived and 47
   prescribed by the specification.
 
+The S5 bullets were recorded on an earlier registry deployment. The registry
+addresses below were deployed fresh for S6 acceptance, so querying them today
+returns the S6 state instead: score `525`, one deal, zero exposure and zero
+reserve. Every superseded deployment and the reason it was replaced are kept in
+[`deployments/creditcoin.json`](deployments/creditcoin.json); nothing is
+migrated between registries, because a registry's state is its deals, reserves
+and credit history.
+
 Exact hashes, blocks, gas, timing and state snapshots are indexed from
 [`docs/STATUS_EN.md`](docs/STATUS_EN.md), [`data/live/`](data/live/) and the
 [`v0.4.8 verification checkpoint`](docs/verification/v0.4.8-phase-b/README.md).
@@ -193,6 +201,8 @@ are evidence and historical review material, not the current task list.
 | `data/` | Committed probe and live-run evidence |
 | `docs/` | Specification, runbooks, measurements, status and verification |
 | `assets/` | Project artwork and presentation deck |
+
+Cr3dX is MIT licensed; see [`LICENSE`](LICENSE).
 
 ## Project links
 

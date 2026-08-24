@@ -2,8 +2,11 @@
 
 ## Status and authority
 
-Snapshot date: 2026-08-22. Current `main` at this snapshot:
-`229d084efd898e16526699da8988de88af9bf1b5`.
+Snapshot date: 2026-08-24. Last behavioral commit on `main`:
+`229d084efd898e16526699da8988de88af9bf1b5`. Everything committed after it is
+documentation, packaging and presentation: the English specification, this
+status file, the workflow rendering, the submission deck and the pre-submission
+editorial pass. No contract, test or deployment changed.
 
 [`STATUS.md`](STATUS.md) is the complete Russian chronological source journal.
 It preserves implementation, deployment, acceptance and editorial history, with

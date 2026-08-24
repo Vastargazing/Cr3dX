@@ -75,7 +75,9 @@ npm run worker -- run
 
 `step` performs one backfill/reconciliation/scheduling pass. `run` repeats it.
 Both can sign and broadcast when configured; do not invoke them against live
-networks before the exact authorization `РАЗРЕШАЮ S6 LIVE`.
+networks before the exact authorization phrase `РАЗРЕШАЮ S6 LIVE`. The phrase is
+in the operator's own language and is matched literally, so that no paraphrase
+can be mistaken for consent to spend real funds.
 
 Status reports the global lane separately from task states:
 

@@ -1,5 +1,15 @@
 # Cr3dX — техническая спецификация (ФИНАЛЬНАЯ, В РАБОТУ)
 
+> **This file is in Russian, and it is not the entry point.** It is the original
+> specification. Its v0.4.8 revision, at commit
+> `cbc382b39fabd9a34b218fe6ff35699e18bdca4a`, is the frozen normative input of
+> the completed Phase A/B verification chain, so the file is retained for exact
+> provenance rather than as reading material. The complete public specification
+> in English is [`CR3DX_SPEC_V0.4.8_EN.md`](CR3DX_SPEC_V0.4.8_EN.md), with a
+> shorter guide in [`SPEC_DIGEST_EN.md`](SPEC_DIGEST_EN.md). A disagreement
+> between the English rendering and this file is a translation defect, not a
+> choice between two normative texts.
+
 **Проект:** Cr3dX, Verified Cross-Chain Credit Layer
 **Хакатон:** BUIDL CTC 2026 Fall, трек RWA
 **Сеть развёртывания:** Creditcoin3 Testnet, chain ID **102031**

@@ -673,7 +673,10 @@ Before the first state-changing live operation, produce a preflight containing:
 - intended transactions;
 - run and recovery commands.
 
-Then stop until the exact authorization:
+Then stop until the exact authorization phrase below. It is matched
+literally, in the operator's own language, so that no paraphrase and no
+English sentence produced in passing can be mistaken for consent to spend
+real funds:
 
 ```text
 РАЗРЕШАЮ S6 LIVE

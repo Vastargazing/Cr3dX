@@ -6,6 +6,14 @@ provenance. Current English entry points are the root
 [`README`](../../README.md), [`STATUS_EN`](../STATUS_EN.md) and
 [`WORKFLOW`](../WORKFLOW.md).
 
+One redaction is recorded here rather than made silently. The repository
+cleanup report originally named the specific local editor and tooling
+directories its scan had found in the working checkout. That sentence now
+describes them as local development-environment directories without naming
+the tools. The finding is unchanged: the directories are empty, untracked,
+absent from the git tree and absent from a clean clone, and no change was
+required.
+
 ## Reports
 
 ### README newcomer audit

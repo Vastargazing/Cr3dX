@@ -92,4 +92,25 @@ anchors:
 
 The byte-preserved file inventory can be independently verified from the Phase
 A and B0 seals and the B1 top-level `manifest.sha256` files included alongside
-the evidence.
+the evidence. Every file in this directory verifies against those seals today:
+
+```sh
+cd docs/verification/v0.4.8-phase-b/phase-a
+sha256sum -c freeze-seal.sha256
+sha256sum -c <(sed -n '/^## Exact payload file hashes/,/^## Freeze assertions/p' \
+               freeze-manifest.md | grep -E '^[0-9a-f]{64}  ')
+cd ../phase-b0 && sha256sum -c b0-seal.sha256
+```
+
+## Why these files are not tidied up
+
+The sealed manifests record the absolute filesystem paths of the isolated model
+workspace on the machine where Phase A and B0 ran. Those paths are inputs to the
+hashes above: rewriting them to something shorter would break every seal, and
+recomputing the seals afterwards would silently replace evidence sealed before
+implementation access with evidence produced after it. That is exactly the
+property this checkpoint exists to prove, so the files stay byte-exact and the
+paths stay as they were recorded.
+
+For the same reason nothing under this directory is reformatted, relinted or
+line-wrapped to match the rest of the repository.

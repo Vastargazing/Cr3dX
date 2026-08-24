@@ -55,7 +55,8 @@ Our own retention measurement covered only about one hour.
 source come from `docs/ATTESTCOIN_INTEGRATION.md` and its raw files under
 `data/probe/`. Historical v0.4.4 credit evidence comes from
 `data/live/deal-2026-08-19T16-57-41-969Z.json`. S6 comes from the STATUS section
-dated 2026-08-21, "S6 live acceptance завершена на v0.4.8", pinned by commit
+dated 2026-08-21, "S6 live acceptance завершена на v0.4.8" ("S6 live acceptance
+completed on v0.4.8"), pinned by commit
 `f359c54c5647841a08e4e66dec267cf4cbeb110d`, and destination transactions
 `0xa626556e0798a67d77b484896d10e662763d041c2e9ead2d0c4ad112f2955657`,
 `0xc740cf0ee69401817c32a310f6e2781ab63d125f7fc2bd299338cfe5fdc822ad`,
@@ -238,7 +239,8 @@ estimates, lag, grace, proof re-anchoring and the protocol-team statement come
 from `docs/ATTESTCOIN_INTEGRATION.md`, `data/probe/` and the referenced STATUS
 sections. Historical v0.4.4 state and gas come from
 `data/live/deal-2026-08-19T16-57-41-969Z.json`. S6 comes from the STATUS section
-dated 2026-08-21, "S6 live acceptance завершена на v0.4.8", at immutable commit
+dated 2026-08-21, "S6 live acceptance завершена на v0.4.8" ("S6 live acceptance
+completed on v0.4.8"), at immutable commit
 `f359c54c5647841a08e4e66dec267cf4cbeb110d`, plus destination transactions
 `0xa626556e0798a67d77b484896d10e662763d041c2e9ead2d0c4ad112f2955657`,
 `0xc740cf0ee69401817c32a310f6e2781ab63d125f7fc2bd299338cfe5fdc822ad`,
