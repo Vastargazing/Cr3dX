@@ -77,6 +77,9 @@ hash handoffs and the point where implementation and model were first compared.
 
 ## Read-only dashboard
 
+**Live: [vastargazing.github.io/Cr3dX](https://vastargazing.github.io/Cr3dX/)** -
+no wallet, no signature, nothing to install.
+
 The dashboard in [`ui/`](ui/) explains the recorded S6 snapshot and can repeat
 public Creditcoin view calls without a wallet, signer or private configuration.
 Snapshot and live observation remain visibly separate; failed refreshes cannot
@@ -201,6 +204,7 @@ are evidence and historical review material, not the current task list.
 | `data/` | Committed probe and live-run evidence |
 | `docs/` | Specification, runbooks, measurements, status and verification |
 | `assets/` | Project artwork and presentation deck |
+| `.github/` | Workflow that builds and publishes the dashboard |
 
 Cr3dX is MIT licensed; see [`LICENSE`](LICENSE).
 
@@ -211,8 +215,10 @@ Cr3dX is MIT licensed; see [`LICENSE`](LICENSE).
   [specification digest](docs/SPEC_DIGEST_EN.md).
 - [English audit index](docs/audit/README.md) and the current
   [English status](docs/STATUS_EN.md).
-- [Read-only dashboard](ui/) and its [local run instructions](ui/README.md).
-- [Project deck](assets/Cr3dX_RWA_Deck_v1.pptx).
+- [Live dashboard](https://vastargazing.github.io/Cr3dX/), its
+  [source](ui/) and its [local run instructions](ui/README.md).
+- Project deck as [PDF](assets/Cr3dX_RWA_Deck_v1.pdf) or
+  [PowerPoint](assets/Cr3dX_RWA_Deck_v1.pptx).
 - [S5 live testnet runbook](docs/S5_LIVE_RUNBOOK.md): credentials, preflight,
   state-changing demo, recovery and legacy fixtures.
 - [S6 worker runbook](docs/S6_WORKER_RUNBOOK.md) and
